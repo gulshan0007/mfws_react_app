@@ -1,304 +1,206 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, Modal, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { BarChart } from 'react-native-chart-kit'; // Import only BarChart, since LineChart is not used
-import { fetchAllData } from '../utils/widgetAPI';
+import { View, Text, Button, Image, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { BarChart, LineChart } from 'react-native-chart-kit';
+import axios from 'axios';
+import { fetchStationData } from '../utils/widgetAPI';
 import clou from '../assets/cloudy.png';
 import img1 from '../assets/download.png';
 import img2 from '../assets/download.png';
 import img3 from '../assets/download.png';
 
-const screenWidth = Dimensions.get('window').width;
+export default function RainfallWidget({ selectedOption }) {
+  const [data, setData] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-interface StationData {
-    temperature: number;
-    humidity: number;
-    pressure: number;
-}
+  const rainfallBarChartData = [
+    ["Time", "Rainfall (Past 6 hrs)", "Rainfall (Next 24 hrs)"],
+    ["10 AM", 1.5, 0],
+    ["11 AM", 2, 0],
+    ["12 PM", 0.5, 0],
+    ["1 PM", 1, 0],
+    ["2 PM", 3, 0],
+    ["3 PM", 2.5, 0],
+    ["4 PM", 0, 3],
+    ["5 PM", 8, 4.5],
+    ["6 PM", 9, 5],
+    ["7 PM", 7, 3],
+    ["8 PM", 8, 4.5],
+    ["9 PM", 5, 5],
+    ["10 PM", 3, 3.5],
+    ["11 PM", 7, 2.5],
+    ["12 AM", 9, 3],
+    ["1 AM", 0, 4],
+    ["2 AM", 0, 3.5],
+    ["3 AM", 0, 3],
+    ["4 AM", 0, 2.5],
+    ["5 AM", 0, 4],
+    ["6 AM", 0, 3],
+    ["7 AM", 0, 2.5],
+    ["8 AM", 0, 4],
+    ["9 AM", 0, 3.5],
+    ["10 AM", 0, 2],
+    ["11 AM", 0, 4],
+    ["12 PM", 0, 3],
+    ["1 PM", 0, 3.5],
+    ["2 PM", 0, 4],
+    ["3 PM", 0, 5],
+  ];
 
-interface Station {
-    id: string;
-    name: string;
-}
+  const dailyPredictionChartData = [
+    ["Day", "Rainfall"],
+    ["2 Days Ago", 1.5],
+    ["Day Before Yesterday", 2],
+    ["Yesterday", 2.5],
+    ["Today", 3],
+    ["Tomorrow", 2],
+    ["Day After Tomorrow", 3.5]
+  ];
 
-interface RainfallData {
-    data: StationData;
-    station: Station;
-}
-
-interface RainfallWidgetProps {
-    selectedOption: Station;
-}
-
-const RainfallWidget: React.FC<RainfallWidgetProps> = ({ selectedOption }) => {
-    const [data, setData] = useState<RainfallData | null>(null);
-    const [modalOpen, setModalOpen] = useState<boolean>(false);
-
-    useEffect(() => {
-        if (selectedOption) {
-            fetchAllData(selectedOption.id)
-                .then((data: RainfallData) => setData(data))
-                .catch((error: any) => console.error('Error fetching station data:', error));
-        }
-    }, [selectedOption]);
-
-    if (!data) {
-        return <Text>Loading...</Text>;
+  useEffect(() => {
+    if (selectedOption) {
+      console.log('Station data:', selectedOption);
+      fetchStationData(selectedOption.station_id)
+        .then(data => setData(data))
+        .catch(error => console.error('Error fetching station data:', error));
     }
+  }, [selectedOption]);
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View style={styles.infoBox}>
-                    <Image source={clou} style={styles.icon} />
-                    <Text style={styles.temperature}>{data.data.temperature}°C</Text>
-                </View>
-                <View style={styles.stationInfo}>
-                    <Text style={styles.stationName}>{data.station.name}</Text>
-                </View>
-                <View style={styles.infoBox}>
-                    <Text style={styles.humidity}>{data.data.humidity}</Text>
-                    <Text style={styles.pressure}>{data.data.pressure}</Text>
-                </View>
-            </View>
+  if (!data) {
+    return <Text>Loading...</Text>;
+  }
 
-            <Text style={styles.chartHeading1}>Hourly Rainfall Forecast (Experimental)</Text>
-            <ScrollView horizontal>
-                <View style={styles.chartContainer}>
+  return (
+    <View style={styles.widgetContainer}>
+      <View style={styles.row}>
+        <Image source={clou} style={styles.icon} />
+        <Text >{data.station.name}</Text>
+        {/* <Text>{data.data.humidity}</Text> */}
+      </View>
+      <View style={styles.row}>
+      <Text style={styles.temperature}>{data.station.curr_temp}°C</Text>
+        
+        {/* <Text>{data.data.pressure}</Text> */}
+      </View>
+<ScrollView horizontal>
+  <BarChart
+    data={{
+      labels: rainfallBarChartData.slice(1).map(item => item[0]),
+      datasets: [
+        {
+          data: rainfallBarChartData.slice(1).map(item => item[1]),
+        },
+        {
+          data: rainfallBarChartData.slice(1).map(item => item[2]),
+        },
+      ],
+    }}
+    width={600}
+    height={300}
+    
+    chartConfig={{
+      backgroundGradientFrom: '#1E2923',
+      backgroundGradientTo: '#08130D',
+      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      strokeWidth: 2,
+      barPercentage: 0.5, // Adjust bar width
+      paddingVertical: 10, // Adjust vertical padding
+    }}
+    
+    verticalLabelRotation={90} // Rotate x-axis labels
+  />
+</ScrollView>
 
-                    <RainfallBarChart />
-                </View>
-            </ScrollView>
-            <Text style={styles.chartHeading2}>Scroll</Text>
-            <View style={styles.chartContainer}>
-
-                <Text style={styles.chartHeading}>Daily Rainfall Forecast (Experimental)</Text>
-
-
-                <DailyPredictionChart />
-            </View>
+      <BarChart
+        data={{
+          labels: dailyPredictionChartData.slice(1).map(item => item[0]),
+          datasets: [
+            {
+              data: dailyPredictionChartData.slice(1).map(item => item[1]),
+            },
+          ],
+        }}
+        width={400}
+        height={200}
+        style={{marginTop: 0}}
+        chartConfig={{
+          backgroundGradientFrom: '#1E2923',
+          backgroundGradientTo: '#08130D',
+          color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+          labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+          strokeWidth: 2,
+        }}
+      />
+      <Button title="View Past Rainfall" onPress={() => setModalOpen(true)} />
+      {modalOpen && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalOpen}
+          onRequestClose={() => setModalOpen(!modalOpen)}
+        >
+          <View style={styles.modalContainer}>
             <TouchableOpacity
-                style={styles.button}
-                onPress={() => setModalOpen(true)}
+              style={styles.closeButton}
+              onPress={() => setModalOpen(!modalOpen)}
             >
-                <Text style={styles.buttonText}>View Past Rainfall</Text>
+              <Text style={styles.closeButtonText}>×</Text>
             </TouchableOpacity>
-
-            {modalOpen && (
-                <Modal
-                    transparent={true}
-                    visible={modalOpen}
-                    onRequestClose={() => setModalOpen(false)}
-                >
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContent}>
-                            <TouchableOpacity
-                                style={styles.closeButton}
-                                onPress={() => setModalOpen(false)}
-                            >
-                                <Text style={styles.closeButtonText}>&times;</Text>
-                            </TouchableOpacity>
-                            {/* <ScrollView vertical>
-                                <Image source={img1} style={styles.modalImage} />
-                                <Image source={img2} style={styles.modalImage} />
-                                <Image source={img3} style={styles.modalImage} />
-                            </ScrollView> */}
-                        </View>
-                    </View>
-                </Modal>
-            )}
-        </View>
-    );
-}
-
-function RainfallBarChart() {
-    return (
-        <BarChart
-            data={{
-                labels: ["10", "11", "12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "1", "2", "3"],
-                datasets: [
-                    {
-                        data: [1.5, 2, 0.5, 1, 3, 2.5, 0, 3, 4.5, 5, 3, 4.5, 5, 3.5, 2.5, 3, 4, 3.5, 3, 2.5, 4, 3, 2.5, 4, 3.5, 2, 4, 3, 3.5, 4, 5]
-                    }
-                ]
-            }}
-            width={screenWidth * 2} // Adjust width to accommodate all bars
-            height={300} // Increased height for better visibility
-            yAxisLabel=""
-            yAxisSuffix="mm"
-            yAxisInterval={1} // optional, defaults to 1
-            chartConfig={{
-                backgroundColor: "#000000",
-                backgroundGradientFrom: "#1E2923",
-                backgroundGradientTo: "#08130D",
-                decimalPlaces: 2, // optional, defaults to 2dp
-                color: (opacity = 1) => `rgba(118, 167, 250, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                style: {
-                    borderRadius: 16
-                },
-                propsForDots: {
-                    r: "6",
-                    strokeWidth: "2",
-                    stroke: "#ffa726"
-                },
-                barPercentage: 0.5, // Adjusted bar percentage for better spacing
-                barRadius: 5, // Rounded bar edges for better aesthetics
-                fillShadowGradient: "#76A7FA", // Bar fill color
-                fillShadowGradientOpacity: 1,
-            }}
-            style={{
-                marginVertical: 8,
-                borderRadius: 16,
-
-            }}
-        />
-    );
-}
-
-function DailyPredictionChart() {
-    return (
-        <BarChart
-            data={{
-                labels: ["2 Days Ago", "Yesterday", "Today", "Tomorrow  ", "D.A.Tomorrow"],
-                datasets: [
-                    {
-                        data: [1.5, 2, 2.5, 3, 2]
-                    }
-                ]
-            }}
-            width={screenWidth - 16} // from react-native
-            height={220}
-            yAxisLabel=""
-            yAxisSuffix="mm"
-            yAxisInterval={1} // optional, defaults to 1
-            chartConfig={{
-                backgroundColor: "#000000",
-                backgroundGradientFrom: "#1E2923",
-                backgroundGradientTo: "#08130D",
-                decimalPlaces: 2, // optional, defaults to 2dp
-                color: (opacity = 1) => `rgba(118, 167, 250, ${opacity})`, // Corrected to use a function
-                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                style: {
-                    borderRadius: 16
-                },
-                propsForDots: {
-                    r: "6",
-                    strokeWidth: "2",
-                    stroke: "#ffa726"
-                }
-            }}
-            style={{
-                marginVertical: 8,
-                borderRadius: 16
-            }}
-        />
-    );
+            <View style={styles.imageRow}>
+              <Image source={img1} style={styles.image} />
+              <Image source={img2} style={styles.image} />
+              <Image source={img3} style={styles.image} />
+            </View>
+          </View>
+        </Modal>
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        borderRadius: 16,
-        padding: 16,
-        margin: 8,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginBottom: 16,
-    },
-    infoBox: {
-        alignItems: 'center',
-    },
-    icon: {
-        width: 48,
-        height: 48,
-    },
-    temperature: {
-        fontSize: 24,
-        color: '#ff4500',
-    },
-    stationInfo: {
-        justifyContent: 'center',
-    },
-    stationName: {
-        fontSize: 18,
-        color: '#ffffff',
-    },
-    humidity: {
-        fontSize: 16,
-        color: '#47a0ff',
-        marginTop: 16,
-    },
-    pressure: {
-        fontSize: 16,
-        color: '#47a0ff',
-        marginTop: 16,
-    },
-    chartContainer: {
-        marginVertical: 0,
-    },
-    chartHeading: {
-        marginVertical: 1,
-        textAlign: 'center',
-        fontWeight: 'bold',
-        color: '#ffffff', // Text color white
-        fontSize: 16, // Font size set to 16
-    },
-    chartHeading1: {
-        marginVertical: 0,
-        textAlign: 'center',
-        fontWeight: 'bold',
-        color: '#ffffff', // Text color white
-        fontSize: 16, // Font size set to 16
-    },
-    chartHeading2: {
-        marginVertical: 0,
-        textAlign: 'center',
-        fontWeight: 'bold',
-        color: 'green', // Text color white
-        fontSize: 16, // Font size set to 16
-    },
-    button: {
-        backgroundColor: '#1E90FF',
-        padding: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 16,
-    },
-    buttonText: {
-        color: '#ffffff',
-        fontSize: 16,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContent: {
-        backgroundColor: '#ffffff',
-        padding: 16,
-        borderRadius: 8,
-        width: '80%',
-        alignItems: 'center',
-    },
-    closeButton: {
-        position: 'absolute',
-        top: 2,
-        right: 2,
-    },
-    closeButtonText: {
-        fontSize: 24,
-        color: '#000000',
-    },
-    modalImage: {
-        width: 100,
-        height: 100,
-        margin: 0,
-    },
+  widgetContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 10,
+    borderRadius: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  icon: {
+    width: 48,
+    height: 48,
+  },
+  temperature: {
+    fontSize: 24,
+    color: '#ff4500',
+  },
+  modalContainer: {
+    
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 1,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: '#fff',
+  },
+  imageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  image: {
+    width: 100,
+    height: 100,
+    margin: 5,
+  },
 });
-
-export default RainfallWidget;
 

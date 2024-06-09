@@ -1,3 +1,4 @@
+// BottomTabNavigator.tsx
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -6,31 +7,34 @@ import SearchScreen from '../screens/SearchScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import CustomTabBar from '../components/CustomTabBar'; // Import CustomTabBar
 
 const Tab = createBottomTabNavigator();
 
 const BottomTabNavigator = () => {
   return (
     <Tab.Navigator
+      tabBar={(props) => <CustomTabBar {...props} />} // Use CustomTabBar as tabBar
       screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: string;
 
           switch (route.name) {
-            case 'Home':
-              iconName = focused ? 'home' : 'home-outline';
+            case 'Rainfall':
+              iconName = focused ? 'rainy' : 'rainy-outline';
               break;
-            case 'Search':
-              iconName = focused ? 'search' : 'search-outline';
+            case 'Waterlevel':
+              iconName = focused ? 'water' : 'water-outline';
               break;
-            case 'Notifications':
-              iconName = focused ? 'notifications' : 'notifications-outline';
+            case 'Crowdsourcing':
+              iconName = focused ? 'accessibility' : 'accessibility-outline';
               break;
             case 'Messages':
               iconName = focused ? 'mail' : 'mail-outline';
               break;
             case 'Profile':
-              iconName = focused ? 'person' : 'person-outline';
+              iconName = focused ? 'ellipsis-horizontal' : 'ellipsis-horizontal-outline';
               break;
             default:
               iconName = 'ellipse';
@@ -42,11 +46,11 @@ const BottomTabNavigator = () => {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} />
-      <Tab.Screen name="Messages" component={MessagesScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Rainfall" component={HomeScreen} />
+      <Tab.Screen name="Waterlevel" component={SearchScreen} />
+      <Tab.Screen name="Crowdsourcing" component={NotificationsScreen} />
+      <Tab.Screen name="Form" component={MessagesScreen} />
+      <Tab.Screen name="About-Us" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
