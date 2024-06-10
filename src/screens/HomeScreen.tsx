@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, Modal, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { PERMISSIONS, request } from 'react-native-permissions';
 import Geolocation from '@react-native-community/geolocation';
@@ -10,6 +10,7 @@ export default function HomeScreen() {
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true); // Add loading state
   const webviewRef = useRef(null);
   const [region, setRegion] = useState({
     latitude: 19.0760, // Mumbai latitude
@@ -25,9 +26,11 @@ export default function HomeScreen() {
       try {
         const data = await fetchStations();
         setStations(data);
+        setLoading(false); // Set loading to false after data is fetched
         requestLocationPermission();
       } catch (error) {
         console.error('Error fetching stations:', error);
+        setLoading(false); // Set loading to false in case of error
       }
     };
 
@@ -38,11 +41,11 @@ export default function HomeScreen() {
     try {
       const granted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
       if (granted !== 'granted') {
-        Alert.alert(
-          'Permission Denied',
-          'Location permission is required to show the nearest station.',
-          [{ text: 'OK' }]
-        );
+        // Alert.alert(
+        //   'Permission Denied',
+        //   'Location permission is required to show the nearest station.',
+        //   [{ text: 'OK' }]
+        // );
         return;
       }
 
@@ -265,6 +268,12 @@ export default function HomeScreen() {
       handleMarkerPress(data);
     }}
   />
+  
+  {loading && (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#0000ff" />
+    </View>
+  )}
 
   <Modal
     visible={modalVisible}
@@ -303,7 +312,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     marginBottom: 10,
     backgroundColor: 'rgba(0, 0, 0, 0.8)', 
-    
   },
   searchResults: {
     marginTop: 5,
@@ -336,6 +344,12 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 24,
     color: 'white',
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Semi-transparent white background
   },
 });
 

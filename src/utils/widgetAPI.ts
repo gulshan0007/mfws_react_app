@@ -5,13 +5,7 @@ const baseURL = 'https://api.mumbaiflood.in/aws/';
 export const fetchStations = async () => {
     try {
         const response = await axios.get(`${baseURL}stations/`);
-        return response.data.map((station: any) => ({
-            id: station.id,
-            name: station.name,
-            latitude: station.latitude,
-            longitude: station.longitude,
-            // Add any other properties you need
-        }));
+        return response.data;
     } catch (error) {
         console.error('Error fetching stations:', error);
         throw error;

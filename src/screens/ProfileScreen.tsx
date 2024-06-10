@@ -3,7 +3,7 @@ import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Linking, I
 import iitbLogo from '../assets/iitb.png';
 import csLogo from '../assets/cs.png';
 import hdfcLogo from '../assets/hdfc.png';
-import mcmrLogo from '../assets/mcmr.png';
+import mcmrLogo from '../assets/mcmbg.png';
 import instagramIcon from '../assets/instagram.png';
 import twitterIcon from '../assets/twitter.png';
 import youtubeIcon from '../assets/youtube.png';
@@ -14,9 +14,13 @@ const ProfileScreen: React.FC = () => {
         <ScrollView style={styles.container}>
             <Text style={styles.paragraph}>
                 {'\n\n'}
-                Climate Studies at IIT Bombay, in collaboration with HDFC Ergo, hopes to harness the power of social media to monitor Mumbai floods by taking help from its residents and asking them to post details about floods in their neighborhoods, and collecting this data to issue real-time geographically-specific flood alerts/warnings. The gathered data shall be used to improve flood emergency response and rescue efforts, and help develop accurate flood forecasts in the future.
+                A group of students, faculty, and staff from the Interdisciplinary Programme in Climate Studies (IDPCS) at IIT Bombay is developing an experimental rainfall forecasting system and a flood monitoring system to help Mumbai adapt to its persistent flood situation every monsoon, by dissemination of near-real-time water logging information to Mumbaikars using this website portal and Mumbai Flood App developed by our team. This is an HDFC-ERGO IIT Bombay (HE-IITB) Innovation Lab initiative funded by HDFC ERGO, and in collaboration with MCGM Centre for Municipal Capacity Building and Research (MCMCR), Adani Electricity Mumbai Limited, and Brihanmumbai Electricity Supply and Transport Undertaking (BEST).
                 {'\n\n'}
-                Real-time information at hand can help save lives during disasters. At best, we hope to help Mumbaikars plan their monsoon days effectively. Our ultimate aim is to create a flood resilience plan for the Mumbai metropolitan region.
+                The hyperlocal rainfall forecasts are based on global forecasting systems (GFS) and AI/ML modeling. The widgets in the 'Rainfall' tab on the Home page in this web portal and app display forecasts at hourly intervals for 24 hours along with daily forecasts for the next three days, at the MCGM automatic weathers stations (AWS). For the rainfall forecast widget, visit the Rainfall tab on the Home page. 
+                {'\n\n'}
+                We are also in the process of installing nine water-level monitoring stations at different flood-prone hotspots across Mumbai. These stations will display near-real-time waterlogging scenarios during monsoon. For complete details, visit the Water level tab on the Home Page.
+                {'\n\n'}
+                Join us in this initiative to help Mumbai manage its day-to-day life during monsoon. Report flood in your area using the form. Help us help you.
             </Text>
             <Text style={styles.header}>WHO WE ARE</Text>
             <View style={styles.section}>

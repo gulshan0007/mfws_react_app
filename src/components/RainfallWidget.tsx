@@ -74,12 +74,13 @@ export default function RainfallWidget({ selectedOption }) {
       <View style={styles.row}>
         <Image source={clou} style={styles.icon} />
         <Text >{data.station.name}</Text>
+        <Text >{data.station.curr_windspeed}</Text>
         {/* <Text>{data.data.humidity}</Text> */}
       </View>
       <View style={styles.row}>
       <Text style={styles.temperature}>{data.station.curr_temp}°C</Text>
         
-        {/* <Text>{data.data.pressure}</Text> */}
+        <Text>Rainfall: {data.station.curr_rainfall}</Text>
       </View>
 <ScrollView horizontal>
   <BarChart
@@ -98,13 +99,13 @@ export default function RainfallWidget({ selectedOption }) {
     height={300}
     
     chartConfig={{
-      backgroundGradientFrom: '#1E2923',
-      backgroundGradientTo: '#08130D',
+      backgroundGradientFrom: "#1E2923",
+      backgroundGradientTo: "#08130D",
       color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
       labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
       strokeWidth: 2,
       barPercentage: 0.5, // Adjust bar width
-      paddingVertical: 10, // Adjust vertical padding
+      // paddingVertical: 10, // Adjust vertical padding
     }}
     
     verticalLabelRotation={90} // Rotate x-axis labels
