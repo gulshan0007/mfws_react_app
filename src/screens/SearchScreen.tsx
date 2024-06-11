@@ -69,6 +69,9 @@ const SearchScreen = () => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.waterLevelText}>
+        Waterlevel Monitoring Sensors are under installation. {"\n"}Dummy data is being displayed.
+      </Text>
       <WebView
         style={styles.map}
         originWhitelist={['*']}
@@ -162,11 +165,22 @@ const styles = StyleSheet.create({
   markerImage: {
     width: 200,
     height: 200,
-    marginBottom: 10,
-  },
-  barChart: {
-    marginTop: 10,
-  },
-});
-
-export default SearchScreen;
+    marginBottom: 10  },
+    barChart: {
+      marginTop: 10,
+    },
+    waterLevelText: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      padding: 10,
+      backgroundColor: 'red',
+      color: 'white',
+      textAlign: 'center',
+      zIndex: 1,
+    },
+  });
+  
+  export default SearchScreen;
+  

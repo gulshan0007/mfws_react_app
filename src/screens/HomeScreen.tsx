@@ -202,7 +202,7 @@ export default function HomeScreen() {
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-      var map = L.map('map').setView([${region.latitude}, ${region.longitude}], 10);
+      var map = L.map('map').setView([${region.latitude}, ${region.longitude}], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
       }).addTo(map);
