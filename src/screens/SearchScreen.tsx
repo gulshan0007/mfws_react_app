@@ -82,7 +82,7 @@ const SearchScreen = () => {
         }}
       />
 
-      <Modal
+      {/* <Modal
         visible={modalVisible}
         animationType="slide"
         transparent={true}
@@ -128,7 +128,7 @@ const SearchScreen = () => {
             </View>
           )}
         </View>
-      </Modal>
+      </Modal> */}
     </View>
   );
 };

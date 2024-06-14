@@ -5,9 +5,10 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
-import MessagesScreen from '../screens/MessagesScreen';
+import FormCrowd from '../screens/FormCrowd';
 import ProfileScreen from '../screens/ProfileScreen';
 import CustomTabBar from '../components/CustomTabBar'; // Import CustomTabBar
+import Map from '../screens/Map';
 
 const Tab = createBottomTabNavigator();
 
@@ -48,8 +49,8 @@ const BottomTabNavigator = () => {
     >
       <Tab.Screen name="Rainfall" component={HomeScreen} />
       <Tab.Screen name="Waterlevel" component={SearchScreen} />
-      <Tab.Screen name="Crowdsourcing" component={NotificationsScreen} />
-      <Tab.Screen name="Form" component={MessagesScreen} />
+      <Tab.Screen name="Crowdsourcing" component={Map} />
+      <Tab.Screen name="Form" component={FormCrowd} />
       <Tab.Screen name="About-Us" component={ProfileScreen} />
     </Tab.Navigator>
   );
