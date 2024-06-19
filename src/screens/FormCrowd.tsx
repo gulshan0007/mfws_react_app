@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { fetchLocationData, sendFormData } from '../utils/crowdSourceAPI';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet, Alert, PermissionsAndroid, Platform } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 
 const FormCrowd = () => {
   const [feet, setFeet] = useState<string | null>(null);
@@ -46,8 +47,8 @@ const FormCrowd = () => {
     const formData = {
       waterlevel: data.waterLevelAdjusted,
       location: location,
-      latitude: 19.1331,
-      longitude: 72.9151,
+      latitude: data.latitude,
+      longitude: data.longitude,
       feedback: feedback,
     };
 
@@ -65,9 +66,46 @@ const FormCrowd = () => {
     setActiveOption(option);
   };
 
-  const getGps = () => {
-    navigator.geolocation.getCurrentPosition(
-      async (position: { coords: { latitude: any; longitude: any; }; }) => {
+  const requestLocationPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const rationale: PermissionsAndroid.Rationale = {
+          title: 'Location Permission',
+          message: 'This app needs access to your location to get the current GPS coordinates.',
+          buttonPositive: 'OK',
+          buttonNegative: 'Cancel',
+        };
+  
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          rationale
+        );
+  
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+      return true;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
+
+  const getGps = async () => {
+    const hasLocationPermission = await requestLocationPermission();
+
+    if (!hasLocationPermission) {
+      Alert.alert('Permission Denied', 'Location permission is required to get the current location.');
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      
+      
+    }, 15000); // Timeout after 15 seconds
+
+
+    Geolocation.getCurrentPosition(
+      async (position) => {
         try {
           const currLocation = await fetchLocationData({ lat: position.coords.latitude, long: position.coords.longitude });
           setLocation(currLocation);
@@ -76,8 +114,9 @@ const FormCrowd = () => {
           console.error('Error fetching location data:', error);
         }
       },
-      (error: any) => {
+      (error) => {
         console.error('Error getting GPS location:', error);
+        Alert.alert('Error', 'Error getting GPS location.');
       }
     );
   };
@@ -102,6 +141,7 @@ const FormCrowd = () => {
           <TextInput
             style={styles.input}
             placeholder="Feet"
+            placeholderTextColor="black" 
             value={feet || ''}
             onChangeText={(text) => setFeet(text)}
             keyboardType="numeric"
@@ -109,6 +149,7 @@ const FormCrowd = () => {
           <TextInput
             style={styles.input}
             placeholder="Inches"
+            placeholderTextColor="black" 
             value={inches || ''}
             onChangeText={(text) => setInches(text)}
             keyboardType="numeric"
@@ -147,7 +188,7 @@ const FormCrowd = () => {
               onPress={handleOption(0.9, 4)}
             >
               <Image source={require('../assets/crowdsource/4.png')} style={styles.waterLevelImage} />
-              <Text style={styles.waterLevelText}>Neck and above</Text>
+              <Text style={styles.waterLevelText}>Neck & above</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -156,6 +197,7 @@ const FormCrowd = () => {
         <TextInput
           style={styles.input}
           placeholder="Location"
+          placeholderTextColor="black" 
           value={location}
           onChangeText={(text) => setLocation(text)}
         />
@@ -164,6 +206,7 @@ const FormCrowd = () => {
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Optional"
+          placeholderTextColor="black" 
           multiline
           value={feedback}
           onChangeText={(text) => setFeedback(text)}
@@ -218,7 +261,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: 'white',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   input: {
     flex: 1,
@@ -249,8 +292,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   waterLevelImage: {
-    width: 100,
-    height: 100,
+    width: 80,
+    height: 80,
   },
   waterLevelText: {
     color: 'white',

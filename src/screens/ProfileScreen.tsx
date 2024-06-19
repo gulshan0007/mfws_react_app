@@ -10,15 +10,20 @@ import youtubeIcon from '../assets/youtube.png';
 import facebookIcon from '../assets/facebook.png';
 
 const ProfileScreen: React.FC = () => {
+    const openLink = (url: string) => {
+        Linking.openURL(url);
+    };
+
     return (
         <ScrollView style={styles.container}>
             <Text style={styles.paragraph}>
                 {'\n\n'}
-                A group of students, faculty, and staff from the Interdisciplinary Programme in Climate Studies (IDPCS) at IIT Bombay is developing an experimental rainfall forecasting system and a flood monitoring system to help Mumbai adapt to its persistent flood situation every monsoon, by dissemination of near-real-time water logging information to Mumbaikars using this website portal and Mumbai Flood App developed by our team. This is an HDFC-ERGO IIT Bombay (HE-IITB) Innovation Lab initiative funded by HDFC ERGO, and in collaboration with MCGM Centre for Municipal Capacity Building and Research (MCMCR), Adani Electricity Mumbai Limited, and Brihanmumbai Electricity Supply and Transport Undertaking (BEST).
+                We are a team of students, faculty, and staff from the Interdisciplinary Programme in Climate Studies (IDPCS) at IIT Bombay, developing an experimental rainfall forecasting and flood monitoring system to help Mumbai adapt to its persistent monsoon flooding. By disseminating near-real-time waterlogging information through a dedicated website portal and the Mumbai Flood App, we aim to provide Mumbaikars with timely and accurate updates. This initiative is part of the HDFC-ERGO IIT Bombay (HE-IITB) Innovation Lab, funded by HDFC ERGO and in collaboration with the MCGM Centre for Municipal Capacity Building and Research (MCMCR).
                 {'\n\n'}
-                The hyperlocal rainfall forecasts are based on global forecasting systems (GFS) and AI/ML modeling. The widgets in the 'Rainfall' tab on the Home page in this web portal and app display forecasts at hourly intervals for 24 hours along with daily forecasts for the next three days, at the MCGM automatic weathers stations (AWS). For the rainfall forecast widget, visit the Rainfall tab on the Home page. 
+                Our hyperlocal rainfall forecasts are derived from global forecasting systems (GFS) and enhanced through AI/ML modeling. The Rainfall tab on the Home page of the web portal and app displays hourly forecasts for the next 24 hours and daily forecasts for the following three days at MCGM automatic weather stations (AWS). For more details on the rainfall forecast, visit the Rainfall tab.
+
                 {'\n\n'}
-                We are also in the process of installing nine water-level monitoring stations at different flood-prone hotspots across Mumbai. These stations will display near-real-time waterlogging scenarios during monsoon. For complete details, visit the Water level tab on the Home Page.
+                Additionally, we are installing nine water-level monitoring stations at various flood-prone hotspots across Mumbai. These stations will provide near-real-time waterlogging updates during the monsoon. For comprehensive information, visit the Water Level tab on the Home Page.
                 {'\n\n'}
                 Join us in this initiative to help Mumbai manage its day-to-day life during monsoon. Report flood in your area using the form. Help us help you.
             </Text>
@@ -45,32 +50,37 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.iitTeam}>
                 <Text style={styles.subHeader}>IIT Bombay Team</Text>
                 <View style={styles.teamList}>
-                    <Text style={styles.teamMember}>Prof. Subimal Ghosh</Text>
-                    <Text style={styles.teamMember}>Prof. Raghu Murtugudde</Text>
-                    <Text style={styles.teamMember}>Dr. Aniket Navalkar</Text>
-                    <Text style={styles.teamMember}>Dr. Mayank Gupta</Text>
-                    <Text style={styles.teamMember}>Dr. Sanghita Basu</Text>
-                    <Text style={styles.teamMember}>Puja Tripathy</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/subimal-ghosh-640b46a/')}>Prof. Subimal Ghosh</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/raghu-murtugudde-b1438a3b/')}>Prof. Raghu Murtugudde</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/aniket-navalkar-4805bb3a')}>Dr. Aniket Navalkar</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/mayank-gupta-b32a3225/')}>Dr. Mayank Gupta</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/dr-sanghita-basu-73190b60/')}>Dr. Sanghita Basu</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/puja-tripathy-82a324173/')}>Puja Tripathy</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.facebook.com/archismita.banerjee.5')}>Archismita Banerjee</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/sheeba-sekharan/')}>Sheeba Sekharan</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/deepaksilaych/')}>Deepak Silaych</Text>
+                    <Text style={[styles.teamMember, styles.link]} onPress={() => Linking.openURL('https://www.linkedin.com/in/gulshan-kumar-69b54b25b/')}>Gulshan Kumar</Text>
                 </View>
                 <Text style={styles.teamNote}>
                     Website & App developed by{'\n'}IIT Bombay students, Deepak{'\n'}Silaych & Gulshan Kumar
-                    {'\n\n'}
+                    {'\n'}
                 </Text>
             </View>
             <View style={styles.socialMediaIcons}>
-                <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com')}>
-                    <Image source={instagramIcon} style={styles.icon} />
-                </TouchableOpacity>
                 <TouchableOpacity onPress={() => Linking.openURL('https://x.com/ClimateIITB')}>
                     <Image source={twitterIcon} style={styles.icon} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => Linking.openURL('https://www.youtube.com/@IDPinClimateStudiesIITBombay')}>
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.youtube.com/IDPinClimateStudiesIITBombay')}>
                     <Image source={youtubeIcon} style={styles.icon} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => Linking.openURL('https://www.facebook.com/IITBclimate')}>
                     <Image source={facebookIcon} style={styles.icon} />
                 </TouchableOpacity>
             </View>
+            <Text >
+                    
+                    {'\n'}{'\n'}{'\n'}{'\n'}
+                </Text>
         </ScrollView>
     );
 };
@@ -121,16 +131,19 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0f0f0',
         padding: 10,
         borderRadius: 5,
-        
+        marginBottom: 20,
     },
     teamList: {
         marginBottom: 10,
-        
     },
     teamMember: {
         fontSize: 16,
         marginBottom: 5,
         color: 'black',
+    },
+    link: {
+        textDecorationLine: 'underline', // Underline the text
+        color: '#007bff', // Optionally change the color to a clickable style
     },
     teamNote: {
         fontSize: 14,
@@ -141,12 +154,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         marginTop: 20,
-        gap: 10,
         marginBottom: 30,
     },
     icon: {
         width: 40,
         height: 40,
+        marginRight: 10,
     },
 });
 

@@ -5,25 +5,88 @@ import { fetchCrowdData } from '../utils/crowdSourceAPI';
 
 const Map = () => {
   const webViewRef = useRef(null);
-  const [loading, setLoading] = useState(true); // Track loading state
+  const [loading, setLoading] = useState(true);
   const [mapData, setMapData] = useState([]);
+  const [minLevel, setMinLevel] = useState(0);
+  const [maxLevel, setMaxLevel] = useState(0);
 
   useEffect(() => {
     const fetchMapData = async () => {
       try {
-        const data = await fetchCrowdData(); // Fetch crowd data (markers data)
-        setMapData(data); // Set map data state
-        setLoading(false); // Set loading to false after data is fetched
-        console.log('Fetched map data:', data);
+        const data = await fetchCrowdData();
+        setMapData(data);
+        const levels = data.map(d => d.waterlevel);
+        setMinLevel(Math.min(...levels));
+        setMaxLevel(Math.max(...levels));
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching map data:', error);
-        setLoading(false); // Handle loading state in case of error
+        setLoading(false);
         Alert.alert('Error', 'Failed to fetch map data. Please try again.');
       }
     };
 
     fetchMapData();
   }, []);
+
+  const interpolateColor = (color1, color2, factor) => {
+    const result = color1.slice();
+    for (let i = 0; i < 3; i++) {
+      result[i] = Math.round(result[i] + factor * (color2[i] - result[i]));
+    }
+    return result;
+  };
+
+  const hexToRgb = (hex) => {
+    const bigint = parseInt(hex.slice(1), 16);
+    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+  };
+
+  const rgbToHex = (rgb) => {
+    return `#${((1 << 24) + (rgb[0] << 16) + (rgb[1] << 8) + rgb[2]).toString(16).slice(1)}`;
+  };
+
+  const getColorByWaterLevel = (waterlevel, minLevel, maxLevel) => {
+    const lowColor = hexToRgb("#00FF00"); // Green
+    const highColor = hexToRgb("#FF0000"); // Red
+    const factor = (waterlevel - minLevel) / (maxLevel - minLevel);
+    const interpolatedColor = interpolateColor(lowColor, highColor, factor);
+    return rgbToHex(interpolatedColor);
+  };
+
+  const createCustomIcon = (waterlevel, minLevel, maxLevel) => {
+    const color = getColorByWaterLevel(waterlevel, minLevel, maxLevel);
+    return `
+      <div style="
+        background-color: ${color};
+        border-radius: 30%;
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: black;
+        font-weight: bold;
+        font-size: 14px;
+        text-align: center;
+        line-height: 40px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      ">
+        ${waterlevel.toFixed()}
+      </div>
+    `;
+  };
+
+  const generateMarkersScript = (markers) => {
+    return markers.map(marker => {
+      const iconHtml = createCustomIcon(marker.waterlevel, minLevel, maxLevel);
+      return `
+        L.marker([${marker.latitude}, ${marker.longitude}], { icon: L.divIcon({ html: \`${iconHtml}\`, className: "" }) })
+          .bindPopup('<b>Water Level:</b> ${marker.waterlevel.toFixed(2)} mm')
+          .addTo(map);
+      `;
+    }).join('');
+  };
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -45,19 +108,13 @@ const Map = () => {
         <div id="map"></div>
         <script>
           document.addEventListener("DOMContentLoaded", function() {
-            var map = L.map('map').setView([19.0760, 72.8777], 12); // Set initial map view
+            var map = L.map('map').setView([19.0760, 72.8777], 12);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              maxZoom: 19,
+            L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+              maxZoom: 18,
             }).addTo(map);
 
-            var markers = ${JSON.stringify(mapData)}; // Get markers data from React Native
-
-            markers.forEach(function(marker) {
-              L.marker([marker.latitude, marker.longitude]).addTo(map)
-                .bindPopup('<b>Water Level:</b> ' + marker.waterlevel.toFixed(2) + ' mm')
-                .openPopup();
-            });
+            ${generateMarkersScript(mapData)}
 
             console.log("Map and markers have been initialized");
           });
@@ -81,9 +138,9 @@ const Map = () => {
             <ActivityIndicator size="large" color="#0000ff" />
           </View>
         )}
-        onError={(error) => console.error('WebView error:', error)} // Add error handling
+        onError={(error) => console.error('WebView error:', error)}
       />
-      {loading && ( // Display loading indicator conditionally
+      {loading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
         </View>

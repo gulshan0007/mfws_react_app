@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { PERMISSIONS, request } from 'react-native-permissions';
-import Geolocation from '@react-native-community/geolocation';
 import { fetchStations } from '../utils/widgetAPI';
 import RainfallWidget from '../components/RainfallWidget';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import Video from 'react-native-video'; // Import Video component from react-native-video
 
-export default function HomeScreen() {
+const HomeScreen = () => {
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [refreshCount, setRefreshCount] = useState(0); // State to trigger refresh
+  const [videoLoaded, setVideoLoaded] = useState(false); // State to control video loading
+
   const webviewRef = useRef(null);
   const [region, setRegion] = useState({
     latitude: 19.0760, // Mumbai latitude
@@ -20,114 +22,33 @@ export default function HomeScreen() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [showMapAlert, setShowMapAlert] = useState(true); // State for showing alert
 
   useEffect(() => {
     const fetchStationsData = async () => {
       try {
         const data = await fetchStations();
-        setStations(data);
-        setLoading(false); // Set loading to false after data is fetched
-        requestLocationPermission();
+        setStations(data.sort((a, b) => a.name.localeCompare(b.name))); // Sort stations alphabetically
+        setVideoLoaded(true); // Mark video as loaded once data is fetched
       } catch (error) {
         console.error('Error fetching stations:', error);
-        setLoading(false); // Set loading to false in case of error
       }
     };
 
     fetchStationsData();
   }, []);
 
-  const requestLocationPermission = async () => {
-    try {
-      const granted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-      if (granted !== 'granted') {
-        // Alert.alert(
-        //   'Permission Denied',
-        //   'Location permission is required to show the nearest station.',
-        //   [{ text: 'OK' }]
-        // );
-        return;
-      }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVideoLoaded(true); // Simulate video loading after 4 seconds
+    }, 4000);
 
-      locateCurrentPosition();
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
-  const locateCurrentPosition = () => {
-    Geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        const nearestStation = findNearestStation(latitude, longitude);
-        if (nearestStation) {
-          const newRegion = {
-            latitude: nearestStation.latitude,
-            longitude: nearestStation.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          };
-
-          setRegion(newRegion);
-          handleMarkerPress(nearestStation);
-        } else {
-          const newRegion = {
-            latitude,
-            longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          };
-
-          setRegion(newRegion);
-        }
-      },
-      error => Alert.alert(error.message),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
-    );
-  };
-
-  const findNearestStation = (latitude, longitude) => {
-    if (stations.length === 0) return null;
-
-    let nearestStation = null;
-    let minDistance = Number.MAX_VALUE;
-
-    stations.forEach(station => {
-      const distance = getDistanceFromLatLonInKm(
-        latitude,
-        longitude,
-        station.latitude,
-        station.longitude
-      );
-
-      if (distance < minDistance) {
-        nearestStation = station;
-        minDistance = distance;
-      }
-    });
-
-    return nearestStation;
-  };
-
-  const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    return distance;
-  };
-
-  const deg2rad = deg => {
-    return deg * (Math.PI / 180);
-  };
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleMarkerPress = station => {
-    console.log(station);
     setSelectedStation(station);
     setModalVisible(true);
   };
@@ -144,10 +65,11 @@ export default function HomeScreen() {
           latitude: region.latitude,
           longitude: region.longitude,
           stations: stations,
+          selectedMarker: selectedMarker,
         })
       );
     }
-  }, [region, stations]);
+  }, [region, stations, selectedMarker, modalVisible, refreshCount]);
 
   const handleSearchQueryChange = query => {
     setSearchQuery(query);
@@ -157,13 +79,14 @@ export default function HomeScreen() {
       );
       setSearchResults(results);
     } else {
-      setSearchResults([]);
+      setSearchResults(stations);
     }
   };
 
   const handleStationSelect = station => {
     setSearchQuery('');
     setSearchResults([]);
+    setShowDropdown(false);
     zoomToStation(station);
   };
 
@@ -178,153 +101,229 @@ export default function HomeScreen() {
     handleMarkerPress(station);
   };
 
+  const renderDropdown = () => (
+    <ScrollView style={styles.dropdown}>
+      {searchResults.map((result, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.dropdownItem}
+          onPress={() => handleStationSelect(result)}
+        >
+          <Text style={styles.dropdownItemText}>{result.name}</Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+
   const leafletHTML = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <title>Leaflet Map</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <style>
-      #map {
-        height: 100%;
-        width: 100%;
-      }
-      body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        width: 100%;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script>
-      var map = L.map('map').setView([${region.latitude}, ${region.longitude}], 12);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-      }).addTo(map);
-      var markers = [];
-      document.addEventListener('message', function(event) {
-        console.log('Received message from React Native:', event.data);
-        var data = JSON.parse(event.data);
-        var lat = data.latitude;
-        var lng = data.longitude;
-        var stations = data.stations;
-        map.setView([lat, lng], 10);
-        markers.forEach(function(marker) {
-          map.removeLayer(marker);
-        });
-        markers = [];
-        stations.forEach(function(station) {
-          console.log('Adding marker for station:', station);
-          var marker = L.marker([station.latitude, station.longitude]).addTo(map);
-          marker.bindPopup('<b>' + station.name + '</b>');
-          marker.on('click', function() {
-            window.ReactNativeWebView.postMessage(JSON.stringify(station));
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Leaflet Map</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+      <style>
+        #map {
+          height: 100%;
+          width: 100%;
+        }
+        body, html {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          width: 100%;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+      <script>
+        var map = L.map('map').setView([${region.latitude}, ${region.longitude}], 12);
+        L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+          maxZoom: 18,
+        }).addTo(map);
+        var markers = [];
+        document.addEventListener('message', function(event) {
+          var data = JSON.parse(event.data);
+          var lat = data.latitude;
+          var lng = data.longitude;
+          var stations = data.stations;
+          var selectedMarker = data.selectedMarker;
+          map.setView([lat, lng], 10);
+          markers.forEach(function(marker) {
+            map.removeLayer(marker);
           });
-          markers.push(marker);
+          markers = [];
+          stations.forEach(function(station) {
+            var isSelected = selectedMarker && selectedMarker.id === station.id;
+            var radius = isSelected ? 16 : 8;
+            var color;
+            if (station.rainfall > 204.4) {
+              color = 'red';
+            }
+            else if (station.rainfall > 115.5) {
+              color = 'orange';
+            }
+            else if (station.rainfall > 64.4) {
+              color = 'yellow';
+            }
+            else if (station.rainfall > 15.5) {
+              color = 'skyblue';
+            }
+            else if (station.rainfall > 0) {
+              color = 'lightgreen';
+            }
+            else {
+              color = 'grey';
+            }
+            var circleMarker = L.circleMarker([station.latitude, station.longitude], {
+              color: 'black',
+              fillColor: color,
+              fillOpacity: 1,
+              radius: radius,
+            }).addTo(map);
+            circleMarker.on('click', function() {
+              window.ReactNativeWebView.postMessage(JSON.stringify(station));
+            });
+            markers.push(circleMarker);
+          });
         });
-      });
-    </script>
-  </body>
-  </html>
+      </script>
+    </body>
+    </html>
   `;
-  
+
+  const handleRefresh = () => {
+    setRefreshCount(prev => prev + 1);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search Station..."
-          value={searchQuery}
-          onChangeText={handleSearchQueryChange}
-          />
-          {searchResults.length > 0 && (
-          <View style={styles.searchResults}>
-          {searchResults.map((result, index) => (
-          <TouchableOpacity
-          key={index}
-          style={styles.searchResultItem}
-          onPress={() => handleStationSelect(result)}
-          >
-          <Text>{result.name}</Text>
-          </TouchableOpacity>
-          ))}
-          </View>
+      {videoLoaded ? (
+        <>
+          {showMapAlert && (
+            <TouchableOpacity style={styles.alertContainer} onPress={() => setShowMapAlert(false)}>
+              <Text style={styles.alertText}>
+                If the station markers are not appearing on the map, tap refresh button.
+              </Text>
+              <TouchableOpacity style={styles.closeButton1} onPress={() => setShowMapAlert(false)}>
+                <Text style={styles.closeButtonText}>X</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
           )}
-          </View>
-          <WebView
-    ref={webviewRef}
-    originWhitelist={['*']}
-    source={{ html: leafletHTML }}
-    style={styles.map}
-    javaScriptEnabled={true}
-    domStorageEnabled={true}
-    onMessage={(event) => {
-      const data = JSON.parse(event.nativeEvent.data);
-      handleMarkerPress(data);
-    }}
-  />
-  
-  {loading && (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#0000ff" />
-    </View>
-  )}
 
-  <Modal
-    visible={modalVisible}
-    animationType="slide"
-    transparent={true}
-    onRequestClose={closeModal}
-  >
-    <View style={styles.modalContainer}>
-      <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-        <Text style={styles.closeButtonText}>X</Text>
-      </TouchableOpacity>
-      {selectedStation && <RainfallWidget selectedOption={selectedStation} />}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search Station..."
+              placeholderTextColor="black"
+              value={searchQuery}
+              onFocus={() => {
+                setShowDropdown(true);
+                setSearchResults(stations);
+              }}
+              onChangeText={handleSearchQueryChange}
+            />
+            <TouchableOpacity
+              style={styles.dropdownButton}
+              onPress={() => setShowDropdown(!showDropdown)}
+            >
+              <FontAwesome name={showDropdown ? 'caret-up' : 'caret-down'} size={20} color="black" />
+            </TouchableOpacity>
+          </View>
+          {showDropdown && renderDropdown()}
+
+          <WebView
+            ref={webviewRef}
+            originWhitelist={['*']}
+            source={{ html: leafletHTML }}
+            style={styles.map}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            onMessage={(event) => {
+              const data = JSON.parse(event.nativeEvent.data);
+              handleMarkerPress(data);
+            }}
+          />
+
+          <Modal
+            visible={modalVisible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={closeModal}
+          >
+            <View style={styles.modalContainer}>
+              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                <Text style={styles.closeButtonText}>X</Text>
+              </TouchableOpacity>
+              {selectedStation && <RainfallWidget selectedOption={selectedStation} />}
+            </View>
+          </Modal>
+
+          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+            <FontAwesome name="refresh" size={24} color="black" />
+          </TouchableOpacity>
+        </>
+      ) : (
+        <View style={styles.loadingContainer}>
+          <Video
+            source={require('../assets/loading.mp4')} // Replace with your actual video source
+            style={styles.video}
+            resizeMode="cover"
+            onLoad={() => setVideoLoaded(true)} // Set videoLoaded to true once the video is loaded
+            onError={error => console.error('Error loading video:', error)}
+            repeat
+          />
+        </View>
+      )}
     </View>
-  </Modal>
-</View>
-);
-}
+  );
+};
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   searchContainer: {
-    position: 'relative',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)', // Black with 50% opacity
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   searchInput: {
+    flex: 1,
     height: 40,
     borderWidth: 1,
     borderColor: 'gray',
     borderRadius: 5,
     paddingHorizontal: 10,
-    marginBottom: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+    backgroundColor: 'white',
+    color: 'black',
   },
-  searchResults: {
-    marginTop: 5,
+  dropdownButton: {
+    marginLeft: 10,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    left: 20,
+    maxHeight: 200,
+    backgroundColor: 'white',
+    borderRadius: 5,
     borderWidth: 1,
     borderColor: 'lightgray',
-    borderRadius: 5,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    zIndex: 1,
   },
-  searchResultItem: {
+  dropdownItem: {
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: 'lightgray',
+  },
+  dropdownItemText: {
+    color: 'black',
   },
   map: {
     flex: 1,
@@ -345,11 +344,48 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: 'white',
   },
+  closeButton1: {
+    position: 'absolute',
+    top: 10,
+    right: 20,
+    zIndex: 1,
+  },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Semi-transparent white background
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+  },
+  alertContainer: {
+    position: 'relative',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'tomato',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  alertText: {
+    color: 'white',
+  },
+  refreshButton: {
+    position: 'absolute',
+    bottom: 27,
+    right: 5,
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 30,
+    elevation: 5,
+  },
+  video: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 });
 
+export default HomeScreen;

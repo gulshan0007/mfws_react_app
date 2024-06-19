@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet, ScrollView, Dimensions, Image } from 'react-native';
+import { Modal, Text, TouchableOpacity, View, StyleSheet, Dimensions, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { BarChart } from 'react-native-chart-kit';
 
 // Dummy markers for the map
 const dummyMarkers = [
@@ -23,7 +22,7 @@ const SearchScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState(null);
 
-  const handleMarkerPress = (marker: React.SetStateAction<null>) => {
+  const handleMarkerPress = (marker) => {
     setSelectedMarker(marker);
     setModalVisible(true);
   };
@@ -43,9 +42,9 @@ const SearchScreen = () => {
       <body style="margin: 0;">
         <div id="map" style="height: 100%;"></div>
         <script>
-          var map = L.map('map').setView([19.0760, 72.8777], 12);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          var map = L.map('map').setView([19.0760, 72.8777], 11);
+          L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+            maxZoom: 18,
           }).addTo(map);
 
           var markers = ${JSON.stringify(dummyMarkers)};
@@ -96,7 +95,8 @@ const SearchScreen = () => {
             <View style={styles.markerInfo}>
               <Image source={require('../assets/download.png')} style={styles.markerImage} />
               <Text>{selectedMarker.name}</Text>
-              <BarChart
+              {/* Example BarChart implementation */}
+              {/* <BarChart
                 style={styles.barChart}
                 data={{
                   labels: ['Station 1', 'Station 2', 'Station 3', 'Station 4', 'Station 5', 'Station 6'],
@@ -124,8 +124,8 @@ const SearchScreen = () => {
                   marginVertical: 8,
                   borderRadius: 16,
                 }}
-              />
-            </View>
+              /> */}
+            {/* </View>
           )}
         </View>
       </Modal> */}
@@ -165,22 +165,22 @@ const styles = StyleSheet.create({
   markerImage: {
     width: 200,
     height: 200,
-    marginBottom: 10  },
-    barChart: {
-      marginTop: 10,
-    },
-    waterLevelText: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      padding: 10,
-      backgroundColor: 'red',
-      color: 'white',
-      textAlign: 'center',
-      zIndex: 1,
-    },
-  });
-  
-  export default SearchScreen;
-  
+    marginBottom: 10,
+  },
+  barChart: {
+    marginTop: 10,
+  },
+  waterLevelText: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+    backgroundColor: 'tomato',
+    color: 'white',
+    textAlign: 'center',
+    zIndex: 1,
+  },
+});
+
+export default SearchScreen;
