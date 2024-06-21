@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchLocationData, sendFormData } from '../utils/crowdSourceAPI';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet, Alert, PermissionsAndroid, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet, Alert, PermissionsAndroid, Platform, Modal, TouchableHighlight } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
+import { Picker } from '@react-native-picker/picker';
 
 const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, csPinToggle }) => {
   const [feet, setFeet] = useState<string | null>(null);
@@ -12,6 +13,7 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
   const [message, setMessage] = useState<string>('');
   const [activeOption, setActiveOption] = useState<number>(0);
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; long: number } | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
 
   const handleSubmit = async () => {
     if (waterlevelfactor === 0) {
@@ -41,6 +43,7 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
       } else {
         await sendData({ latitude: null, longitude: null, feet: adjustedFeet, inches: adjustedInches });
       }
+      setModalVisible(true); // Show modal on successful submission
     } catch (error) {
       console.error('Error submitting form:', error);
       setMessage('Error: Unable to submit form.');
@@ -142,6 +145,20 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
     }
   }, [csPinToggle, csPinDropLocation]);
 
+  const closeModal = () => {
+    setModalVisible(false);
+    setFeet(null);
+    setInches(null);
+    setWaterlevelfactor(0);
+    setLocation('');
+    setFeedback('');
+    setMessage('');
+    setActiveOption(0);
+    setGpsLocation(null);
+    
+    
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Submit Data</Text>
@@ -157,26 +174,42 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
           </TouchableOpacity>
         )}
 
-        
-
         <View style={styles.heightContainer}>
           <Text style={styles.label}>Your Height:</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Feet"
-            placeholderTextColor="black"
-            value={feet || ''}
-            onChangeText={(text) => setFeet(text)}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Inches"
-            placeholderTextColor="black"
-            value={inches || ''}
-            onChangeText={(text) => setInches(text)}
-            keyboardType="numeric"
-          />
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={feet}
+              onValueChange={(itemValue) => setFeet(itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="In Feet" value={null} />
+              <Picker.Item label="3" value="3" />
+              <Picker.Item label="4" value="4" />
+              <Picker.Item label="5" value="5" />
+              <Picker.Item label="6" value="6" />
+              <Picker.Item label="7" value="7" />
+            </Picker>
+
+            <Picker
+              selectedValue={inches}
+              onValueChange={(itemValue) => setInches(itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="In Inches" value={null} />
+              <Picker.Item label="0" value="0" />
+              <Picker.Item label="1" value="1" />
+              <Picker.Item label="2" value="2" />
+              <Picker.Item label="3" value="3" />
+              <Picker.Item label="4" value="4" />
+              <Picker.Item label="5" value="5" />
+              <Picker.Item label="6" value="6" />
+              <Picker.Item label="7" value="7" />
+              <Picker.Item label="8" value="8" />
+              <Picker.Item label="9" value="9" />
+              <Picker.Item label="10" value="10" />
+              <Picker.Item label="11" value="11" />
+            </Picker>
+          </View>
         </View>
 
         <View style={styles.waterLevelContainer}>
@@ -242,6 +275,28 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
           <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={closeModal}
+            >
+              <Text style={styles.closeButtonText}>X</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalText}>Thank you for filling the form!</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -280,8 +335,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   heightContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     width: '100%',
     marginVertical: 10,
   },
@@ -350,6 +403,60 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 20,
   },
+  pickerContainer: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  picker: {
+    flex: 1,
+    height: 50,
+    color: 'black',
+  },
+  // Modal styles
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+    fontSize: 18,
+    color: 'black',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 10,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: 'black',
+  },
 });
 
 export default FormCrowd;
+
+
