@@ -4,14 +4,12 @@ import { WebView } from 'react-native-webview';
 import { fetchStations } from '../utils/widgetAPI';
 import RainfallWidget from '../components/RainfallWidget';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import Video from 'react-native-video'; // Import Video component from react-native-video
 
-const HomeScreen = () => {
+export default function HomeScreen() {
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0); // State to trigger refresh
-  const [videoLoaded, setVideoLoaded] = useState(false); // State to control video loading
 
   const webviewRef = useRef(null);
   const [region, setRegion] = useState({
@@ -31,21 +29,12 @@ const HomeScreen = () => {
       try {
         const data = await fetchStations();
         setStations(data.sort((a, b) => a.name.localeCompare(b.name))); // Sort stations alphabetically
-        setVideoLoaded(true); // Mark video as loaded once data is fetched
       } catch (error) {
         console.error('Error fetching stations:', error);
       }
     };
 
     fetchStationsData();
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setVideoLoaded(true); // Simulate video loading after 4 seconds
-    }, 4000);
-
-    return () => clearTimeout(timer);
   }, []);
 
   const handleMarkerPress = station => {
@@ -69,7 +58,7 @@ const HomeScreen = () => {
         })
       );
     }
-  }, [region, stations, selectedMarker, modalVisible, refreshCount]);
+  }, [region, stations, selectedMarker, modalVisible, refreshCount]); // Added refreshCount as dependency
 
   const handleSearchQueryChange = query => {
     setSearchQuery(query);
@@ -79,7 +68,7 @@ const HomeScreen = () => {
       );
       setSearchResults(results);
     } else {
-      setSearchResults(stations);
+      setSearchResults(stations); // Show all stations if query is empty
     }
   };
 
@@ -195,91 +184,83 @@ const HomeScreen = () => {
   `;
 
   const handleRefresh = () => {
-    setRefreshCount(prev => prev + 1);
+    setRefreshCount(prev => prev + 1); // Increment refreshCount to trigger useEffect
   };
 
   return (
     <View style={styles.container}>
-      {videoLoaded ? (
-        <>
-          {showMapAlert && (
-            <TouchableOpacity style={styles.alertContainer} onPress={() => setShowMapAlert(false)}>
-              <Text style={styles.alertText}>
-                If the station markers are not appearing on the map, tap refresh button.
-              </Text>
-              <TouchableOpacity style={styles.closeButton1} onPress={() => setShowMapAlert(false)}>
-                <Text style={styles.closeButtonText}>X</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-          )}
-
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search Station..."
-              placeholderTextColor="black"
-              value={searchQuery}
-              onFocus={() => {
-                setShowDropdown(true);
-                setSearchResults(stations);
-              }}
-              onChangeText={handleSearchQueryChange}
-            />
-            <TouchableOpacity
-              style={styles.dropdownButton}
-              onPress={() => setShowDropdown(!showDropdown)}
-            >
-              <FontAwesome name={showDropdown ? 'caret-up' : 'caret-down'} size={20} color="black" />
-            </TouchableOpacity>
-          </View>
-          {showDropdown && renderDropdown()}
-
-          <WebView
-            ref={webviewRef}
-            originWhitelist={['*']}
-            source={{ html: leafletHTML }}
-            style={styles.map}
-            javaScriptEnabled={true}
-            domStorageEnabled={true}
-            onMessage={(event) => {
-              const data = JSON.parse(event.nativeEvent.data);
-              handleMarkerPress(data);
-            }}
-          />
-
-          <Modal
-            visible={modalVisible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={closeModal}
-          >
-            <View style={styles.modalContainer}>
-              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                <Text style={styles.closeButtonText}>X</Text>
-              </TouchableOpacity>
-              {selectedStation && <RainfallWidget selectedOption={selectedStation} />}
-            </View>
-          </Modal>
-
-          <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-            <FontAwesome name="refresh" size={24} color="black" />
+      {showMapAlert && ( // Show the alert if showMapAlert is true
+        <TouchableOpacity style={styles.alertContainer} onPress={() => setShowMapAlert(false)}>
+          <Text style={styles.alertText}>
+            If the station markers are not appearing on the map, tap refresh button.
+          </Text>
+          <TouchableOpacity style={styles.closeButton1} onPress={() => setShowMapAlert(false)}>
+            <Text style={styles.closeButtonText}>X</Text>
           </TouchableOpacity>
-        </>
+        </TouchableOpacity>
+      )}
+
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Station..."
+          placeholderTextColor="black"
+          value={searchQuery}
+          onFocus={() => setShowDropdown(true)}
+          onChangeText={handleSearchQueryChange}
+        />
+        <TouchableOpacity
+          style={styles.dropdownButton}
+          onPress={() => {
+            setShowDropdown(prev => !prev);
+            if (!showDropdown) setSearchResults(stations);
+          }}
+        >
+          <FontAwesome name={showDropdown ? 'caret-up' : 'caret-down'} size={20} color="black" />
+        </TouchableOpacity>
+      </View>
+      {showDropdown && renderDropdown()}
+
+      {stations ? (
+        <WebView
+          ref={webviewRef}
+          originWhitelist={['*']}
+          source={{ html: leafletHTML }}
+          style={styles.map}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          onMessage={(event) => {
+            const data = JSON.parse(event.nativeEvent.data);
+            handleMarkerPress(data);
+          }}
+        />
       ) : (
         <View style={styles.loadingContainer}>
-          <Video
-            source={require('../assets/loading.mp4')} // Replace with your actual video source
-            style={styles.video}
-            resizeMode="cover"
-            onLoad={() => setVideoLoaded(true)} // Set videoLoaded to true once the video is loaded
-            onError={error => console.error('Error loading video:', error)}
-            repeat
-          />
+          <ActivityIndicator size="large" color="#0000ff" />
         </View>
       )}
+
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+            <Text style={styles.closeButtonText}>X</Text>
+          </TouchableOpacity>
+          {selectedStation && <RainfallWidget selectedOption={selectedStation} />}
+        </View>
+      </Modal>
+
+      <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+        <FontAwesome name="refresh" size={24} color="black" />
+      </TouchableOpacity>
     </View>
   );
-};
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -349,6 +330,7 @@ const styles = StyleSheet.create({
     top: 10,
     right: 20,
     zIndex: 1,
+    
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -381,11 +363,4 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     elevation: 5,
   },
-  video: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
 });
-
-export default HomeScreen;

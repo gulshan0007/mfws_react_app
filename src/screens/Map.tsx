@@ -1,23 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { fetchCrowdData } from '../utils/crowdSourceAPI';
 
-const Map = () => {
+const Map = ({ csPinToggle, csPinDropLocation, setCsPinDropLocation }) => {
   const webViewRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [mapData, setMapData] = useState([]);
-  const [minLevel, setMinLevel] = useState(0);
-  const [maxLevel, setMaxLevel] = useState(0);
+  
 
   useEffect(() => {
     const fetchMapData = async () => {
       try {
         const data = await fetchCrowdData();
         setMapData(data);
-        const levels = data.map(d => d.waterlevel);
-        setMinLevel(Math.min(...levels));
-        setMaxLevel(Math.max(...levels));
         setLoading(false);
       } catch (error) {
         console.error('Error fetching map data:', error);
@@ -54,38 +50,77 @@ const Map = () => {
     return rgbToHex(interpolatedColor);
   };
 
-  const createCustomIcon = (waterlevel, minLevel, maxLevel) => {
-    const color = getColorByWaterLevel(waterlevel, minLevel, maxLevel);
-    return `
-      <div style="
-        background-color: ${color};
-        border-radius: 30%;
-        width: 25px;
-        height: 25px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: black;
-        font-weight: bold;
-        font-size: 14px;
-        text-align: center;
-        line-height: 40px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      ">
-        ${waterlevel.toFixed()}
-      </div>
+  const createCustomIcon = (feet, inch) => {
+
+    const getColorByFeetAndInches = (feet, inch) => {
+      const totalInches = feet * 12 + inch;
+      if (totalInches < 24) {
+        return "#FFFF00"; 
+      } else if (totalInches >= 24 && totalInches <= 60) {
+        return "#FFA500"; 
+      } else {
+        return "#FF0000";
+      }
+    };
+
+    // if (waterlevel === undefined) {
+    //   return `
+    //     <div style="
+    //       background-color: #CCCCCC;
+    //       border-radius: 30%;
+    //       width: 25px;
+    //       height: 25px;
+    //       display: flex;
+    //       align-items: center;
+    //       justify-content: center;
+    //       color: black;
+    //       font-weight: bold;
+    //       font-size: 14px;
+    //       text-align: center;
+    //       line-height: 40px;
+    //       box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    //     ">
+    //       N/A
+    //     </div>
+    //   `;
+    // }
+
+    const color = getColorByFeetAndInches(feet, inch);
+        return `
+       <div style="
+      background-color: ${color};
+      border-radius: 30%;
+      width: 40px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: black;
+      font-weight: bold;
+      font-size: 14px;
+      text-align: center;
+      line-height: 1.2;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    ">
+      ${feet}'${inch}"
+    </div>
     `;
   };
 
   const generateMarkersScript = (markers) => {
     return markers.map(marker => {
-      const iconHtml = createCustomIcon(marker.waterlevel, minLevel, maxLevel);
+      const iconHtml = createCustomIcon(marker.feet, marker.inch );
       return `
         L.marker([${marker.latitude}, ${marker.longitude}], { icon: L.divIcon({ html: \`${iconHtml}\`, className: "" }) })
-          .bindPopup('<b>Water Level:</b> ${marker.waterlevel.toFixed(2)} mm')
+          .bindPopup('<b>Water Level:</b> ${marker.feet !== undefined ? marker.feet : 'N/A'} ')
           .addTo(map);
       `;
     }).join('');
+  };
+
+  const handleMapClick = async (event) => {
+    const { lat, lng } = event.latlng;
+    setCsPinDropLocation({ lat, long: lng });
   };
 
   const htmlContent = `
@@ -116,12 +151,25 @@ const Map = () => {
 
             ${generateMarkersScript(mapData)}
 
+            if (${csPinToggle}) {
+              map.on('click', function(e) {
+                var lat = e.latlng.lat;
+                var lng = e.latlng.lng;
+                window.ReactNativeWebView.postMessage(JSON.stringify({ lat, lng }));
+              });
+            }
+
             console.log("Map and markers have been initialized");
           });
         </script>
       </body>
     </html>
   `;
+
+  const handleWebViewMessage = (event) => {
+    const data = JSON.parse(event.nativeEvent.data);
+    setCsPinDropLocation({ lat: data.lat, long: data.lng });
+  };
 
   return (
     <View style={styles.container}>
@@ -138,6 +186,7 @@ const Map = () => {
             <ActivityIndicator size="large" color="#0000ff" />
           </View>
         )}
+        onMessage={handleWebViewMessage}
         onError={(error) => console.error('WebView error:', error)}
       />
       {loading && (

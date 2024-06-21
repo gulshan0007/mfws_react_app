@@ -55,7 +55,14 @@ export default function RainfallWidget({ selectedOption }) {
       },
     ],
   };
+  
+  const minValue = 0;
+const maxValue = 250;
 
+function* yLabel() {
+  yield* [minValue, '', maxValue];
+}
+const yLabelIterator = yLabel();
   return (
     <>
       <View style={styles.timeContainer}>
@@ -84,14 +91,14 @@ export default function RainfallWidget({ selectedOption }) {
             height={300}
             chartConfig={{
               ...barChartConfig,
-              yAxisSuffix: ' mm',
-              yAxisInterval: 10, // Interval of 10 for y-axis grid lines
+              
             }}
             verticalLabelRotation={0}
             style={styles.chart}
             fromZero
             withCustomBarColorFromData
             flatColor
+            
           />
           
         </ScrollView>
@@ -119,11 +126,15 @@ export default function RainfallWidget({ selectedOption }) {
           data={formattedDailyData}
           width={screenWidth}
           height={200}
+          segments={5}
+          bezier
           chartConfig={{
             ...dailyChartConfig,
+            
             yAxisSuffix: ' mm',
             yAxisInterval: 50, // Interval of 50 for y-axis grid lines
           }}
+          formatYLabel={() => yLabelIterator.next().value}
           style={styles.chart}
           fromZero
           withCustomBarColorFromData
@@ -162,6 +173,7 @@ const barChartConfig = {
     strokeWidth: 1,
     stroke: 'rgba(255,255,255,0.2)',
   },
+  
  
 };
 
@@ -178,9 +190,7 @@ const dailyChartConfig = {
     strokeWidth: 1,
     stroke: 'rgba(255,255,255,0.2)',
   },
-  yAxisInterval: 50,
-  yAxisSuffix: ' mm',
-  yAxisLabel: [0, 50, 100, 150, 200, 250],
+  
 };
 
 const styles = StyleSheet.create({

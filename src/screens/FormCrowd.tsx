@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fetchLocationData, sendFormData } from '../utils/crowdSourceAPI';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet, Alert, PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 
-const FormCrowd = () => {
+const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, csPinToggle }) => {
   const [feet, setFeet] = useState<string | null>(null);
   const [inches, setInches] = useState<string | null>(null);
   const [waterlevelfactor, setWaterlevelfactor] = useState<number>(0);
@@ -29,13 +29,17 @@ const FormCrowd = () => {
       return;
     }
 
-    const waterLevelAdjusted = waterlevelfactor * (30.48 * parseInt(feet!) + 2.54 * parseInt(inches!));
+    const adjustedWaterLevel = (parseInt(feet) * 12 + parseInt(inches)) * waterlevelfactor;
+    const adjustedFeet = Math.floor(adjustedWaterLevel / 12);
+    const adjustedInches = adjustedWaterLevel % 12;
 
     try {
       if (gpsLocation) {
-        await sendData({ waterLevelAdjusted, latitude: gpsLocation.lat, longitude: gpsLocation.long });
+        await sendData({ latitude: gpsLocation.lat, longitude: gpsLocation.long, feet: adjustedFeet, inches: adjustedInches });
+      } else if (csPinToggle && csPinDropLocation) {
+        await sendData({ latitude: csPinDropLocation.lat, longitude: csPinDropLocation.long, feet: adjustedFeet, inches: adjustedInches });
       } else {
-        await sendData({ waterLevelAdjusted, latitude: null, longitude: null });
+        await sendData({ latitude: null, longitude: null, feet: adjustedFeet, inches: adjustedInches });
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -43,9 +47,10 @@ const FormCrowd = () => {
     }
   };
 
-  const sendData = async (data: { waterLevelAdjusted: number; latitude: number | null; longitude: number | null }) => {
+  const sendData = async (data: { latitude: number | null; longitude: number | null; feet: number; inches: number }) => {
     const formData = {
-      waterlevel: data.waterLevelAdjusted,
+      feet: feet,
+      inches: inches,
       location: location,
       latitude: data.latitude,
       longitude: data.longitude,
@@ -75,12 +80,12 @@ const FormCrowd = () => {
           buttonPositive: 'OK',
           buttonNegative: 'Cancel',
         };
-  
+
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
           rationale
         );
-  
+
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       }
       return true;
@@ -97,12 +102,6 @@ const FormCrowd = () => {
       Alert.alert('Permission Denied', 'Location permission is required to get the current location.');
       return;
     }
-
-    const timeoutId = setTimeout(() => {
-      
-      
-    }, 15000); // Timeout after 15 seconds
-
 
     Geolocation.getCurrentPosition(
       async (position) => {
@@ -121,27 +120,51 @@ const FormCrowd = () => {
     );
   };
 
+  const handlePinDropToggle = () => {
+    if (!gpsLocation) {
+      setCsPinToggle(!csPinToggle);
+      setCsPinDropLocation(null);
+      setLocation('');
+    }
+  };
+
+  useEffect(() => {
+    if (csPinToggle) {
+      (async () => {
+        try {
+          const currLocation = await fetchLocationData({ lat: csPinDropLocation.lat, long: csPinDropLocation.long });
+          setLocation(currLocation);
+          console.log('Current location:', currLocation);
+        } catch (error) {
+          console.error('Error fetching location data:', error);
+        }
+      })();
+    }
+  }, [csPinToggle, csPinDropLocation]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Submit Data</Text>
 
       <ScrollView contentContainerStyle={styles.formContainer}>
         {gpsLocation ? (
-          <TouchableOpacity style={styles.locationButton}>
+          <TouchableOpacity style={[styles.locationButton, styles.locationButtonDisabled]}>
             <Text style={styles.buttonText}>Using current location...</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={getGps} style={[styles.locationButton, styles.locationButtonActive]}>
+          <TouchableOpacity onPress={getGps} style={[styles.locationButton, csPinToggle ? styles.locationButtonDisabled : styles.locationButtonActive]}>
             <Text style={styles.buttonText}>Use my current location</Text>
           </TouchableOpacity>
         )}
+
+        
 
         <View style={styles.heightContainer}>
           <Text style={styles.label}>Your Height:</Text>
           <TextInput
             style={styles.input}
             placeholder="Feet"
-            placeholderTextColor="black" 
+            placeholderTextColor="black"
             value={feet || ''}
             onChangeText={(text) => setFeet(text)}
             keyboardType="numeric"
@@ -149,7 +172,7 @@ const FormCrowd = () => {
           <TextInput
             style={styles.input}
             placeholder="Inches"
-            placeholderTextColor="black" 
+            placeholderTextColor="black"
             value={inches || ''}
             onChangeText={(text) => setInches(text)}
             keyboardType="numeric"
@@ -195,28 +218,29 @@ const FormCrowd = () => {
 
         <Text style={styles.label}>Location:</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, gpsLocation && styles.inputDisabled]}
           placeholder="Location"
-          placeholderTextColor="black" 
+          placeholderTextColor="black"
           value={location}
           onChangeText={(text) => setLocation(text)}
+          editable={!gpsLocation}
         />
 
         <Text style={styles.label}>Feedback:</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="Optional"
-          placeholderTextColor="black" 
+          placeholderTextColor="black"
           multiline
           value={feedback}
           onChangeText={(text) => setFeedback(text)}
         />
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+
+        <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
           <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
-
-        <Text style={styles.message}>{message}</Text>
       </ScrollView>
     </View>
   );
@@ -225,91 +249,106 @@ const FormCrowd = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
-    padding: 20,
+    backgroundColor: 'white',
   },
   header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
     textAlign: 'center',
-    marginBottom: 20,
+    fontSize: 24,
+    marginVertical: 20,
+    color: 'black',
   },
   formContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   locationButton: {
-    backgroundColor: '#4287f5',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginBottom: 20,
+    width: '100%',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
   },
   locationButtonActive: {
-    backgroundColor: '#0056b3',
+    backgroundColor: '#3b82f6',
+  },
+  locationButtonDisabled: {
+    backgroundColor: '#cccccc',
   },
   buttonText: {
-    color: 'white',
     textAlign: 'center',
+    color: 'white',
     fontSize: 16,
   },
   heightContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+    marginVertical: 10,
   },
   label: {
-    color: 'white',
-    marginBottom: 6,
+    alignSelf: 'flex-start',
+    fontSize: 16,
+    color: 'black',
+    marginVertical: 5,
   },
   input: {
     flex: 1,
-    backgroundColor: '#e3f2fd',
-    borderRadius: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 10,
+    borderRadius: 10,
     marginHorizontal: 5,
     color: 'black',
   },
+  inputDisabled: {
+    backgroundColor: '#f0f0f0',
+  },
   textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-    color: 'black',
+    height: 50,
+    width: 250,
   },
   waterLevelContainer: {
-    marginBottom: 20,
+    width: '100%',
+    marginVertical: 10,
   },
   waterLevelOptions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 10,
   },
   waterLevelOption: {
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '22%',
+    padding: 10,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    borderRadius: 10,
   },
   waterLevelOptionActive: {
-    borderColor: '#ff0000',
-    borderWidth: 2,
+    borderColor: '#3b82f6',
   },
   waterLevelImage: {
-    width: 80,
-    height: 80,
+    width: 50,
+    height: 50,
+    resizeMode: 'contain',
   },
   waterLevelText: {
-    color: 'white',
+    marginTop: 5,
     textAlign: 'center',
-    fontSize: 12,
-  },
-  submitButton: {
-    backgroundColor: '#0056b3',
-    paddingVertical: 15,
-    borderRadius: 5,
-    marginTop: 20,
+    color: 'black',
   },
   message: {
-    color: 'white',
-    marginTop: 20,
     textAlign: 'center',
+    color: 'red',
+    marginVertical: 10,
+  },
+  submitButton: {
+    backgroundColor: '#3b82f6',
+    width: '100%',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 20,
   },
 });
 
