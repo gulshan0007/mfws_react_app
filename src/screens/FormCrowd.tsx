@@ -52,8 +52,8 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
 
   const sendData = async (data: { latitude: number | null; longitude: number | null; feet: number; inches: number }) => {
     const formData = {
-      feet: feet,
-      inches: inches,
+      feet: data.feet,
+      inch: data.inches,
       location: location,
       latitude: data.latitude,
       longitude: data.longitude,
@@ -382,14 +382,15 @@ const styles = StyleSheet.create({
     borderColor: '#3b82f6',
   },
   waterLevelImage: {
-    width: 50,
-    height: 50,
+    width: 70,
+    height: 70,
     resizeMode: 'contain',
   },
   waterLevelText: {
     marginTop: 5,
     textAlign: 'center',
     color: 'black',
+    fontSize: 10,
   },
   message: {
     textAlign: 'center',
@@ -406,11 +407,12 @@ const styles = StyleSheet.create({
   pickerContainer: {
     flexDirection: 'column',
     justifyContent: 'space-between',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#d1d5db',
     borderRadius: 8,
     paddingHorizontal: 10,
-    marginBottom: 10,
+    paddingVertical: 10,
+    marginBottom: 2,
   },
   picker: {
     flex: 1,

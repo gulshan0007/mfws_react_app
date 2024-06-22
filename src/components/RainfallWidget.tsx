@@ -56,13 +56,7 @@ export default function RainfallWidget({ selectedOption }) {
     ],
   };
   
-  const minValue = 0;
-const maxValue = 250;
 
-function* yLabel() {
-  yield* [minValue, '', maxValue];
-}
-const yLabelIterator = yLabel();
   return (
     <>
       <View style={styles.timeContainer}>
@@ -91,7 +85,7 @@ const yLabelIterator = yLabel();
             height={300}
             chartConfig={{
               ...barChartConfig,
-              
+              yAxisInterval: 5,
             }}
             verticalLabelRotation={0}
             style={styles.chart}
@@ -132,7 +126,7 @@ const yLabelIterator = yLabel();
             ...dailyChartConfig,
             
             yAxisSuffix: ' mm',
-            yAxisInterval: 50, // Interval of 50 for y-axis grid lines
+            yAxisInterval: 10, // Interval of 50 for y-axis grid lines
           }}
           formatYLabel={() => yLabelIterator.next().value}
           style={styles.chart}
