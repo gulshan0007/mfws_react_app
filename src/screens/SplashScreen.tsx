@@ -8,7 +8,7 @@ const SplashScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#0000ff" />
+      
       <Video
         source={videoSource}
         style={styles.backgroundVideo}

@@ -106,17 +106,35 @@ const Map = ({ csPinToggle, csPinDropLocation, setCsPinDropLocation }) => {
     </div>
     `;
   };
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const options = {
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: true,
+    };
+    return date.toLocaleTimeString('en-US', options);
+};
 
   const generateMarkersScript = (markers) => {
     return markers.map(marker => {
-      const iconHtml = createCustomIcon(marker.feet, marker.inch );
+      const iconHtml = createCustomIcon(marker.feet, marker.inch);
+      const popupHtml = `
+        <div>
+          <h4 class="text-lg font-semibold text-blue-600" style="color: blue;">Reported Water Level: ${marker.feet}' ${marker.inch}"</h4>
+          <h4 class="text-sm font-semibold text-green-600" style="color: green;">Location: ${marker.location}</h4>
+          <h4 class="text-sm font-semibold text-red-600" style="color: red;">Time: ${formatTime(marker.timestamp)}</h4>
+        </div>
+      `;
       return `
         L.marker([${marker.latitude}, ${marker.longitude}], { icon: L.divIcon({ html: \`${iconHtml}\`, className: "" }) })
-          .bindPopup('<b>Water Level:</b> ${marker.feet !== undefined ? marker.feet : 'N/A'} ')
+          .bindPopup(\`${popupHtml}\`)
           .addTo(map);
       `;
     }).join('');
   };
+  
 
   const handleMapClick = async (event) => {
     const { lat, lng } = event.latlng;

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { fetchLocationData, sendFormData } from '../utils/crowdSourceAPI';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, StyleSheet, Alert, PermissionsAndroid, Platform, Modal, TouchableHighlight } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Image, PermissionsAndroid, Platform, Modal } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { Picker } from '@react-native-picker/picker';
+import WebView from 'react-native-webview';
 
-const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, csPinToggle }) => {
+const FormCrowd = () => {
   const [feet, setFeet] = useState<string | null>(null);
   const [inches, setInches] = useState<string | null>(null);
   const [waterlevelfactor, setWaterlevelfactor] = useState<number>(0);
@@ -14,6 +15,10 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
   const [activeOption, setActiveOption] = useState<number>(0);
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; long: number } | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [mapModalVisible, setMapModalVisible] = useState<boolean>(false);
+  const [selectedMapLocation, setSelectedMapLocation] = useState<{ lat: number; long: number } | null>(null);
+  const [csPinToggle, setCsPinToggle] = useState<boolean>(false);
+  const [csPinDropLocation, setCsPinDropLocation] = useState<{ lat: number; long: number } | null>(null);
 
   const handleSubmit = async () => {
     if (waterlevelfactor === 0) {
@@ -26,8 +31,8 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
       return;
     }
 
-    if (!location) {
-      setMessage('Please enter location!!!');
+    if (!location && !selectedMapLocation) {
+      setMessage('Please enter location or select one from the map!!!');
       return;
     }
 
@@ -36,7 +41,9 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
     const adjustedInches = adjustedWaterLevel % 12;
 
     try {
-      if (gpsLocation) {
+      if (selectedMapLocation) {
+        await sendData({ latitude: selectedMapLocation.lat, longitude: selectedMapLocation.long, feet: adjustedFeet, inches: adjustedInches });
+      } else if (gpsLocation) {
         await sendData({ latitude: gpsLocation.lat, longitude: gpsLocation.long, feet: adjustedFeet, inches: adjustedInches });
       } else if (csPinToggle && csPinDropLocation) {
         await sendData({ latitude: csPinDropLocation.lat, longitude: csPinDropLocation.long, feet: adjustedFeet, inches: adjustedInches });
@@ -54,7 +61,7 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
     const formData = {
       feet: data.feet,
       inch: data.inches,
-      location: location,
+      location: location || (selectedMapLocation ? `Latitude: ${selectedMapLocation.lat}, Longitude: ${selectedMapLocation.long}` : ''),
       latitude: data.latitude,
       longitude: data.longitude,
       feedback: feedback,
@@ -124,26 +131,23 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
   };
 
   const handlePinDropToggle = () => {
-    if (!gpsLocation) {
-      setCsPinToggle(!csPinToggle);
-      setCsPinDropLocation(null);
-      setLocation('');
+    if(selectedMapLocation){
+      setCsPinDropLocation(selectedMapLocation)
     }
+    setMapModalVisible(false); // Close map modal if open
   };
 
   useEffect(() => {
-    if (csPinToggle) {
+    if (csPinDropLocation) {
       (async () => {
-        try {
+        
           const currLocation = await fetchLocationData({ lat: csPinDropLocation.lat, long: csPinDropLocation.long });
+          console.log(currLocation);
           setLocation(currLocation);
-          console.log('Current location:', currLocation);
-        } catch (error) {
-          console.error('Error fetching location data:', error);
-        }
+        
       })();
     }
-  }, [csPinToggle, csPinDropLocation]);
+  }, [csPinDropLocation]);
 
   const closeModal = () => {
     setModalVisible(false);
@@ -155,62 +159,127 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
     setMessage('');
     setActiveOption(0);
     setGpsLocation(null);
-    
-    
+    setSelectedMapLocation(null);
+    setCsPinToggle(false);
+    setCsPinDropLocation(null);
   };
+
+  const mapHtml = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>Leaflet Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      #map { height: 100%; }
+      html, body { height: 100%; margin: 0; padding: 0; }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      // Define the region coordinates (can be dynamically set as needed)
+      var region = { latitude: 19.0760, longitude: 72.8777 }; // Example coordinates for Mumbai
+
+      var map = L.map('map').setView([region.latitude, region.longitude], 12);
+      L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+        maxZoom: 18,
+      }).addTo(map);
+
+      // Initialize a fixed marker at the center of the map
+      var marker = L.marker(map.getCenter(), {
+        draggable: true // Make the marker draggable
+      }).addTo(map);
+
+      // Update marker position when map is dragged
+      map.on('move', function(e) {
+        marker.setLatLng(map.getCenter()); // Update marker position to map center
+        var position = marker.getLatLng();
+
+        // Send the coordinates back to React Native
+        window.ReactNativeWebView.postMessage(JSON.stringify({ lat: position.lat, long: position.lng }));
+      });
+
+      // Event listener for dragging marker
+      marker.on('dragend', function(event) {
+        var marker = event.target;
+        var position = marker.getLatLng();
+
+        // Send the coordinates back to React Native
+        window.ReactNativeWebView.postMessage(JSON.stringify({ lat: position.lat, long: position.lng }));
+      });
+
+    </script>
+  </body>
+  </html>
+`;
+
+
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Submit Data</Text>
 
-      <ScrollView contentContainerStyle={styles.formContainer}>
+      <ScrollView contentContainerStyle={styles.formContainer} showsVerticalScrollIndicator={false}>
         {gpsLocation ? (
           <TouchableOpacity style={[styles.locationButton, styles.locationButtonDisabled]}>
             <Text style={styles.buttonText}>Using current location...</Text>
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity onPress={getGps} style={[styles.locationButton, csPinToggle ? styles.locationButtonDisabled : styles.locationButtonActive]}>
+          <TouchableOpacity onPress={getGps} style={[styles.locationButton, csPinToggle || mapModalVisible ? styles.locationButtonDisabled : styles.locationButtonActive]}>
             <Text style={styles.buttonText}>Use my current location</Text>
           </TouchableOpacity>
         )}
 
-        <View style={styles.heightContainer}>
-          <Text style={styles.label}>Your Height:</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={feet}
-              onValueChange={(itemValue) => setFeet(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="In Feet" value={null} />
-              <Picker.Item label="3" value="3" />
-              <Picker.Item label="4" value="4" />
-              <Picker.Item label="5" value="5" />
-              <Picker.Item label="6" value="6" />
-              <Picker.Item label="7" value="7" />
-            </Picker>
+        <TouchableOpacity onPress={() => setMapModalVisible(true)} style={[styles.locationButton, csPinToggle || gpsLocation ? styles.locationButtonDisabled : styles.locationButtonActive]}>
+          <Text style={styles.buttonText}>Select location from map</Text>
+        </TouchableOpacity>
 
-            <Picker
-              selectedValue={inches}
-              onValueChange={(itemValue) => setInches(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="In Inches" value={null} />
-              <Picker.Item label="0" value="0" />
-              <Picker.Item label="1" value="1" />
-              <Picker.Item label="2" value="2" />
-              <Picker.Item label="3" value="3" />
-              <Picker.Item label="4" value="4" />
-              <Picker.Item label="5" value="5" />
-              <Picker.Item label="6" value="6" />
-              <Picker.Item label="7" value="7" />
-              <Picker.Item label="8" value="8" />
-              <Picker.Item label="9" value="9" />
-              <Picker.Item label="10" value="10" />
-              <Picker.Item label="11" value="11" />
-            </Picker>
-          </View>
-        </View>
+        <View style={styles.heightContainer}>
+  <Text style={styles.label}>Height:</Text>
+  <View style={styles.pickerContainer}>
+    <Picker
+      selectedValue={feet}
+      onValueChange={(itemValue) => setFeet(itemValue)}
+      style={[styles.picker, { color: 'black' }]}
+      itemStyle={styles.pickerItem}
+    >
+      <Picker.Item label="In Feet" value={null} />
+      <Picker.Item label="0" value="0"  />
+      <Picker.Item label="1" value="1"  />
+      <Picker.Item label="2" value="2"  />
+      <Picker.Item label="3" value="3"  />
+      <Picker.Item label="4" value="4"  />
+      <Picker.Item label="5" value="5" />
+      <Picker.Item label="6" value="6" />
+      <Picker.Item label="7" value="7" />
+    </Picker>
+
+    <Picker
+      selectedValue={inches}
+      onValueChange={(itemValue) => setInches(itemValue)}
+      style={styles.picker}
+      itemStyle={styles.pickerItem}
+    >
+      <Picker.Item label="In Inches" value={null} />
+      <Picker.Item label="0" value="0" />
+      <Picker.Item label="1" value="1"/>
+      <Picker.Item label="2" value="2"  />
+      <Picker.Item label="3" value="3"  />
+      <Picker.Item label="4" value="4" />
+      <Picker.Item label="5" value="5"  />
+      <Picker.Item label="6" value="6"  />
+      <Picker.Item label="7" value="7"  />
+      <Picker.Item label="8" value="8" />
+      <Picker.Item label="9" value="9" />
+      <Picker.Item label="10" value="10" />
+      <Picker.Item label="11" value="11"  />
+    </Picker>
+  </View>
+</View>
+
 
         <View style={styles.waterLevelContainer}>
           <Text style={styles.label}>Water Level (choose one):</Text>
@@ -254,49 +323,60 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
           style={[styles.input, gpsLocation && styles.inputDisabled]}
           placeholder="Location"
           placeholderTextColor="black"
-          value={location}
+          value={location} // Display selected location here
           onChangeText={(text) => setLocation(text)}
           editable={!gpsLocation}
         />
-
         <Text style={styles.label}>Feedback:</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Optional"
-          placeholderTextColor="black"
-          multiline
+          placeholder="Enter your feedback (optional)"
+          style={styles.feedbackInput}
           value={feedback}
           onChangeText={(text) => setFeedback(text)}
+          multiline
+          numberOfLines={4}
         />
-
-        {message ? <Text style={styles.message}>{message}</Text> : null}
 
         <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
           <Text style={styles.buttonText}>Submit</Text>
         </TouchableOpacity>
-      </ScrollView>
 
-      {/* Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-        }}
-      >
-        <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={closeModal}
-            >
-              <Text style={styles.closeButtonText}>X</Text>
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={modalVisible}
+          onRequestClose={closeModal}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>{message}</Text>
+            <TouchableOpacity onPress={closeModal} style={styles.modalButton}>
+              <Text style={styles.buttonText}>Close</Text>
             </TouchableOpacity>
-            <Text style={styles.modalText}>Thank you for filling the form!</Text>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent={false}
+          visible={mapModalVisible}
+          onRequestClose={() => setMapModalVisible(false)}
+        >
+          <View style={{ flex: 1 }}>
+            <WebView
+              originWhitelist={['*']}
+              source={{ html: mapHtml }}
+              onMessage={(event) => {
+                const location = JSON.parse(event.nativeEvent.data);
+                setSelectedMapLocation({ lat: location.lat, long: location.long });
+              }}
+            />
+
+            <TouchableOpacity onPress={handlePinDropToggle} style={styles.confirmButton}>
+              <Text style={styles.buttonText}>Confirm Location</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      </ScrollView>
     </View>
   );
 };
@@ -304,61 +384,59 @@ const FormCrowd = ({ setCsPinDropLocation, csPinDropLocation, setCsPinToggle, cs
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    padding: 20,
+    backgroundColor: '#fff',
   },
   header: {
-    textAlign: 'center',
     fontSize: 24,
-    marginVertical: 20,
-    color: 'black',
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: '#007bff',
   },
   formContainer: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   locationButton: {
-    width: '100%',
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 5,
     marginBottom: 10,
   },
   locationButtonActive: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#28a745',
   },
   locationButtonDisabled: {
-    backgroundColor: '#cccccc',
+    backgroundColor: '#ccc',
   },
   buttonText: {
+    color: '#fff',
     textAlign: 'center',
-    color: 'white',
-    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderColor: 'black',
+    borderRadius: 8,
+  },
+  picker: {
+    flex: 1,
+    marginLeft: 5,
+    color: 'black', 
+  },
+  pickerItem: {
+    color: 'black', // Set the text color of each item
   },
   heightContainer: {
-    width: '100%',
-    marginVertical: 10,
+    marginBottom: 20,
   },
   label: {
-    alignSelf: 'flex-start',
-    fontSize: 16,
+    fontSize: 18,
+    marginBottom: 5,
     color: 'black',
-    marginVertical: 5,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: 'black',
-    padding: 10,
-    borderRadius: 10,
-    marginHorizontal: 5,
-    color: 'black',
-  },
-  inputDisabled: {
-    backgroundColor: '#f0f0f0',
-  },
-  textArea: {
-    height: 50,
-    width: 250,
   },
   waterLevelContainer: {
     width: '100%',
@@ -382,8 +460,8 @@ const styles = StyleSheet.create({
     borderColor: '#3b82f6',
   },
   waterLevelImage: {
-    width: 70,
-    height: 70,
+    width: 60,
+    height: 80,
     resizeMode: 'contain',
   },
   waterLevelText: {
@@ -392,73 +470,66 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 10,
   },
-  message: {
-    textAlign: 'center',
-    color: 'red',
-    marginVertical: 10,
-  },
-  submitButton: {
-    backgroundColor: '#3b82f6',
-    width: '100%',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 20,
-  },
-  pickerContainer: {
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    marginBottom: 2,
-  },
-  picker: {
+  input: {
     flex: 1,
-    height: 50,
+    borderWidth: 1,
+    borderColor: 'black',
+    padding: 10,
+    borderRadius: 10,
+    marginHorizontal: 5,
+    marginBottom: 10,
     color: 'black',
   },
-  // Modal styles
-  centeredView: {
+  inputDisabled: {
+    backgroundColor: '#f0f0f0',
+  },
+  optionText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  feedbackInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 20,
+    textAlignVertical: 'top',
+  },
+  submitButton: {
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 35,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    padding: 20,
   },
   modalText: {
-    marginBottom: 15,
-    textAlign: 'center',
     fontSize: 18,
-    color: 'black',
+    marginBottom: 20,
+    textAlign: 'center',
+    color: 'black'
   },
-  closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
+  modalButton: {
+    backgroundColor: '#007bff',
     padding: 10,
+    borderRadius: 5,
   },
-  closeButtonText: {
-    fontSize: 20,
-    color: 'black',
+  confirmButton: {
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 5,
+    margin: 20,
+    alignSelf: 'center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
 });
 
+
 export default FormCrowd;
-
-
