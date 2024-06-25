@@ -5,6 +5,7 @@ import { fetchStationData } from '../utils/widgetAPI';
 import plac from '../assets/loc.png';
 
 const screenWidth = Dimensions.get('window').width;
+
 export default function RainfallWidget({ selectedOption }) {
   const [stationData, setStationData] = useState(null);
   const [time, setTime] = useState(new Date().toLocaleTimeString());
@@ -30,16 +31,26 @@ export default function RainfallWidget({ selectedOption }) {
     return <Text>Loading...</Text>;
   }
 
-  const { station, hrly_data, daily_data } = stationData;
+  const { station, hrly_data, daily_data, seasonal_data } = stationData;
 
   const formattedHrlyData = {
-    labels: hrly_data.map((item, index) => index % 2 === 0 ? item.hour : ''), // Display labels every third level
+    labels: hrly_data.map((item, index) => index % 2 === 0 ? item.hour : ''), // Display labels every second hour
     datasets: [
       {
         data: hrly_data.map(item => item.total_rainfall),
-        colors: hrly_data.map((_, index) =>
-          index < 6 ? () => 'rgba(211,211,211,1)' : () => 'rgba(0,0,255,1)'
+        colors: hrly_data.map((value, index) =>
+          index < 6 ? () => 'rgba(211,211,211,1)' : () => 'rgb(0,255,255)'
         ),
+      },
+    ],
+  };
+
+  const formattedSeasonalData = {
+    labels: seasonal_data.flatMap(item => [new Date(item.date).toLocaleDateString('en-US',{day: '2-digit',month:'short'})]),
+    datasets: [
+      {
+        data: seasonal_data.reduce((acc, item) => acc.concat([item.observed, item.predicted]), []),
+        colors: seasonal_data.reduce((acc, item) => acc.concat([() => 'rgba(211,211,211,1)', () => 'rgb(0,255,255)']), []),
       },
     ],
   };
@@ -55,10 +66,17 @@ export default function RainfallWidget({ selectedOption }) {
       },
     ],
   };
-  
+
+
+const minValue = 0;
+
+function* yLabel() {
+  yield* [minValue, 50, 100,150,200];
+}
+const yLabelIterator = yLabel();
 
   return (
-    <>
+    <ScrollView style={styles.container}>
       <View style={styles.timeContainer}>
         <Text style={styles.timeText}>Current Time: {time}</Text>
       </View>
@@ -71,49 +89,47 @@ export default function RainfallWidget({ selectedOption }) {
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: 'rgba(211,211,211,1)' }]} />
-            <Text style={styles.legendText}>Past Hours</Text>
-            <View style={[styles.legendColorBox, { backgroundColor: 'rgba(0,255,255,1)' }]} />
-            <Text style={styles.legendText}>Current Hour</Text>
+            <Text style={styles.legendText}>Observed     </Text>
+            <View style={[styles.legendColorBox, { backgroundColor: 'rgb(0,255,255)' }]} />
+            <Text style={styles.legendText}>Forecasted</Text>
             <Text style={styles.legendText1}>Y-axis : Rainfall (in mm)</Text>
           </View>
         </View>
-        
-        <ScrollView horizontal>
+        <ScrollView horizontal showsHorizontalScrollIndicator>
           <BarChart
             data={formattedHrlyData}
             width={600}
             height={300}
+            
             chartConfig={{
               ...barChartConfig,
-              yAxisInterval: 5,
+              formatYLabel: () => yLabelIterator.next().value,
             }}
             verticalLabelRotation={0}
             style={styles.chart}
             fromZero
             withCustomBarColorFromData
             flatColor
-            
           />
-          
         </ScrollView>
-        
+       
         <Text style={styles.chartTitle}>Daily Rainfall Forecast</Text>
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(205.5) }]} />
-            <Text style={styles.legendText}>Extremely Heavy Rainfall(>=205.5 mm)      </Text>
+            <Text style={styles.legendText}>Extremely Heavy Rainfall (>=204.5 mm)    </Text>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(115.6) }]} />
-            <Text style={styles.legendText}>Very Heavy Rainfall(115.6-204.4 mm)</Text>
+            <Text style={styles.legendText}>Very Heavy Rainfall (115.6-204.4 mm)</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(64.5) }]} />
-            <Text style={styles.legendText}>Heavy Rainfall(64.5-115.5 mm)                     </Text>
+            <Text style={styles.legendText}>Heavy Rainfall (64.5-115.5 mm)                   </Text>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(15.6) }]} />
-            <Text style={styles.legendText}>Moderate Rainfall(15.6-64.4 mm)</Text>
+            <Text style={styles.legendText}>Moderate Rainfall (15.6-64.4 mm)</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(0) }]} />
-            <Text style={styles.legendText}>Very Light to Light Rainfall(0.1-15.6 mm)</Text>
+            <Text style={styles.legendText}>Very Light to Light Rainfall (0.1-15.6 mm)</Text>
           </View>
         </View>
         <BarChart
@@ -125,22 +141,45 @@ export default function RainfallWidget({ selectedOption }) {
           chartConfig={{
             ...dailyChartConfig,
             
-            yAxisSuffix: ' mm',
-            yAxisInterval: 10, // Interval of 50 for y-axis grid lines
           }}
-          formatYLabel={() => yLabelIterator.next().value}
           style={styles.chart}
           fromZero
           withCustomBarColorFromData
           flatColor
         />
       </View>
-    </>
+      <Text style={styles.chartTitle}>Seasonal Rainfall Forecast</Text>
+      <View style={styles.legendContainer}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendColorBox, { backgroundColor: 'rgba(211,211,211,1)' }]} />
+            <Text style={styles.legendText}>Observed        </Text>
+            <View style={[styles.legendColorBox, { backgroundColor: 'rgb(0,255,255)' }]} />
+            <Text style={styles.legendText}>Past Predicted</Text>
+            <Text style={styles.legendText1}>Y-axis : Rainfall (in mm)</Text>
+          </View>
+        </View>
+        <ScrollView horizontal>
+          <BarChart
+            data={formattedSeasonalData}
+            width={screenWidth * 2.5}
+            height={300}
+            chartConfig={{
+              ...barChartConfig,
+              
+            }}
+            verticalLabelRotation={0}
+            style={styles.chart}
+            fromZero
+            withCustomBarColorFromData
+            flatColor
+          />
+        </ScrollView>
+    </ScrollView>
   );
 }
 
 // Function to determine color based on rainfall value
-const getColor = (rainfall: number): string => {
+const getColor = (rainfall) => {
   if (rainfall >= 205.5) {
     return "#FF0000"; // Red
   } else if (rainfall >= 115.6 && rainfall <= 204.4) {
@@ -148,9 +187,9 @@ const getColor = (rainfall: number): string => {
   } else if (rainfall >= 64.5 && rainfall <= 115.5) {
     return "yellow"; // Yellow
   } else if (rainfall >= 15.6 && rainfall <= 64.4) {
-    return "skyblue"; // Green
+    return "skyblue"; // Sky Blue
   } else {
-    return "green"; // Cornflower Blue
+    return "green"; // Green
   }
 };
 
@@ -167,14 +206,12 @@ const barChartConfig = {
     strokeWidth: 1,
     stroke: 'rgba(255,255,255,0.2)',
   },
-  
- 
 };
 
 const dailyChartConfig = {
   backgroundGradientFrom: "rgba(0,0,0,0.8)",
   backgroundGradientTo: "rgba(0,0,0,0.8)",
-  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+   color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
   labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
   barPercentage: 0.5,
   fillShadowGradient: 'rgba(0,0,0,0.8)',
@@ -184,13 +221,17 @@ const dailyChartConfig = {
     strokeWidth: 1,
     stroke: 'rgba(255,255,255,0.2)',
   },
-  
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: 5,
+  },
   timeContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    
   },
   timeText: {
     color: 'white',
@@ -199,18 +240,19 @@ const styles = StyleSheet.create({
   },
   widgetContainer: {
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    padding: 10,
+    padding: 2,
     borderRadius: 10,
-    margin: 10,
+    margin: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 10,
+    marginTop: 20,
   },
   icon: {
-    width: 20,
+    width: 10,
     height: 20,
   },
   stationName: {
@@ -230,14 +272,12 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
     marginBottom: 5,
-    
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 20,
     paddingLeft: 10,
-    
   },
   legendColorBox: {
     width: 10,
@@ -253,17 +293,14 @@ const styles = StyleSheet.create({
   },
   legendText1: {
     color: 'white',
-  fontSize: 10,
-  marginRight: 2,
-  textAlign: 'right',
-  position: 'absolute',
-  top: 0,
-  right: 0
+    fontSize: 10,
+    marginRight: 2,
+    textAlign: 'right',
+    position: 'absolute',
+    top: 0,
+    right: 0,
   },
   chart: {
     marginVertical: 6,
   },
 });
-
-
-
