@@ -17,18 +17,18 @@ const ProfileScreen: React.FC = () => {
 
     return (
         <ScrollView style={styles.container}>
+            <Text style={styles.header}>WHO WE ARE</Text>
             <Text style={styles.paragraph}>
+                We are a team of students, faculty, and staff from the Interdisciplinary Programme in Climate Studies (IDPCS) at IIT Bombay, developing an experimental rainfall forecasting and flood monitoring system to help Mumbai adapt to its persistent monsoon flooding. By disseminating near-real-time waterlogging information through a dedicated website portal and the Mumbai Flood App, we aim to provide Mumbaikars with timely and accurate updates. This initiative is part of the HDFC-ERGO IIT Bombay (HE-IITB) Innovation Lab, funded by HDFC ERGO and in collaboration with the MCGM Centre for Municipal Capacity Building and Research (MCMCR).
                 {'\n\n'}
-                A group of students, faculty, and staff from the Interdisciplinary Programme in Climate Studies (IDPCS) at IIT Bombay is developing an experimental rainfall forecasting system and a flood monitoring system to help Mumbai adapt to its persistent flood situation every monsoon, by dissemination of near-real-time water logging information to Mumbaikars using this website portal and Mumbai Flood App developed by our team. This is an HDFC-ERGO IIT Bombay (HE-IITB) Innovation Lab initiative funded by HDFC ERGO, and in collaboration with MCGM Centre for Municipal Capacity Building and Research (MCMCR).
-                {'\n\n'}
-                 The hyperlocal rainfall forecasts are based on global forecasting systems (GFS) and AI/ML modeling. The widgets in the Rainfall tab on the Home page in this web portal and app display forecasts at hourly intervals for 24 hours along with daily forecasts for the next three days, at the MCGM automatic weathers stations (AWS). For the rainfall forecast widget, visit the Rainfall tab on the Home page.
+                Additionally, we are installing nine water-level monitoring stations at various flood-prone hotspots across Mumbai. These stations will provide near-real-time waterlogging updates during the monsoon. For comprehensive information, visit the Water Level tab on the Home Page.
 
                 {'\n\n'}
             We are also in the process of installing nine water-level monitoring stations at different flood-prone hotspots across Mumbai. These stations will display near-real-time waterlogging scenarios during monsoon. For complete details, visit the Water level tab on the Home Page.
                 {'\n\n'}
-                Join us in this initiative to help Mumbai manage its day-to-day life during monsoon. Report flood in your area using the form. Help us help you.
+                Join us in this initiative to help Mumbai manage its day-to-day life during monsoon. Report flood in your area using THE form. Help us help you.
             </Text>
-            <Text style={styles.header}>WHO WE ARE</Text>
+            
             <View style={styles.section}>
                 <Text style={styles.subHeader}>Implementing Partners</Text>
                 <View style={styles.partners}>
@@ -110,7 +110,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 20,
         color: 'black',
-        fontStyle: 'italic',
+        // fontStyle: 'italic',
+        fontFamily: 'NunitoSans_10pt-Regular',
     },
     header: {
         textAlign: 'center',

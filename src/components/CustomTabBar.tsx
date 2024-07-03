@@ -80,7 +80,7 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
           iconName = isFocused ? 'rainy' : 'rainy-outline';
         } else if (route.name === 'Waterlevel') {
           iconName = isFocused ? 'water' : 'water-outline';
-        } else if (route.name === 'Crowdsourcing') {
+        } else if (route.name === 'Reported Flood') {
           iconName = isFocused ? 'accessibility' : 'accessibility-outline';
         } else if (route.name === 'Rail') {
           iconName = isFocused ? 'train' : 'train-outline';
@@ -269,7 +269,7 @@ export default CustomTabBar;
 //           iconName = isFocused ? 'rainy' : 'rainy-outline';
 //         } else if (route.name === 'Waterlevel') {
 //           iconName = isFocused ? 'water' : 'water-outline';
-//         } else if (route.name === 'Crowdsourcing') {
+//         } else if (route.name === 'Reported Flood') {
 //           iconName = isFocused ? 'accessibility' : 'accessibility-outline';
 //         } else if (route.name === 'Rail') {
 //           iconName = isFocused ? 'train' : 'train-outline';

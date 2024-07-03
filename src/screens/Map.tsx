@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Alert, Text, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { fetchCrowdData } from '../utils/crowdSourceAPI';
 
@@ -161,7 +161,7 @@ const Map = ({ csPinToggle, csPinDropLocation, setCsPinDropLocation }) => {
         <div id="map"></div>
         <script>
           document.addEventListener("DOMContentLoaded", function() {
-            var map = L.map('map').setView([19.0760, 72.8777], 12);
+            var map = L.map('map').setView([19.0760, 72.8777], 10);
 
             L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
               maxZoom: 18,
@@ -191,6 +191,7 @@ const Map = ({ csPinToggle, csPinDropLocation, setCsPinDropLocation }) => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.heading}>Reported Flood Hotspots</Text>
       <WebView
         ref={webViewRef}
         originWhitelist={['*']}
@@ -212,6 +213,18 @@ const Map = ({ csPinToggle, csPinDropLocation, setCsPinDropLocation }) => {
           <ActivityIndicator size="large" color="#0000ff" />
         </View>
       )}
+       <Image
+        source={require('../assets/mf.png')} // Replace with your image path
+        style={{
+          position: 'absolute',
+          bottom: 90, 
+          left: 10,// Adjust as needed
+          alignSelf: 'center',
+          opacity: 0.7, // Adjust opacity as needed
+          height: 50, // Adjust height as needed
+          width: 80, // Adjust width as needed
+        }}
+      />
     </View>
   );
 };
@@ -222,6 +235,14 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    color: 'black',
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,

@@ -28,7 +28,7 @@ const BottomTabNavigator = () => {
             case 'Waterlevel':
               iconName = focused ? 'water' : 'water-outline';
               break;
-            case 'Crowdsourcing':
+            case 'Reported Flood':
               iconName = focused ? 'accessibility' : 'accessibility-outline';
               break;
             case 'Messages':
@@ -49,7 +49,7 @@ const BottomTabNavigator = () => {
     >
       <Tab.Screen name="Rainfall" component={HomeScreen} />
       <Tab.Screen name="Waterlevel" component={SearchScreen} />
-      <Tab.Screen name="Crowdsourcing" component={Map} />
+      <Tab.Screen name="Reported Flood" component={Map} />
       <Tab.Screen name="Form" component={FormCrowd} />
       <Tab.Screen name="About-Us" component={ProfileScreen} />
     </Tab.Navigator>

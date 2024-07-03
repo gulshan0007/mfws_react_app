@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { fetchStations } from '../utils/widgetAPI';
 import RainfallWidget from '../components/RainfallWidget';
@@ -110,7 +110,7 @@ export default function HomeScreen() {
     <head>
       <title>Leaflet Map</title>
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"  />
       <style>
         #map {
           height: 100%;
@@ -189,6 +189,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+
       {showMapAlert && ( // Show the alert if showMapAlert is true
         <TouchableOpacity style={styles.alertContainer} onPress={() => setShowMapAlert(false)}>
           <Text style={styles.alertText}>
@@ -199,7 +200,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       )}
-
+            <Text style={styles.heading}>Mumbai Flood Experiment</Text>
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -216,7 +217,7 @@ export default function HomeScreen() {
             if (!showDropdown) setSearchResults(stations);
           }}
         >
-          <FontAwesome name={showDropdown ? 'caret-up' : 'caret-down'} size={20} color="black" />
+          <FontAwesome name={showDropdown ? 'caret-up' : 'caret-down'} size={40} color="black" />
         </TouchableOpacity>
       </View>
       {showDropdown && renderDropdown()}
@@ -254,6 +255,19 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
+      <Image
+        source={require('../assets/mf.png')} // Replace with your image path
+        style={{
+          position: 'absolute',
+          bottom: 90, 
+          left: 10,// Adjust as needed
+          alignSelf: 'center',
+          opacity: 0.7, // Adjust opacity as needed
+          height: 50, // Adjust height as needed
+          width: 80, // Adjust width as needed
+        }}
+      />
+
       <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
         <FontAwesome name="refresh" size={24} color="black" />
       </TouchableOpacity>
@@ -265,10 +279,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  heading: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 0,
+    color: 'black',
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     paddingVertical: 10,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
@@ -288,20 +310,22 @@ const styles = StyleSheet.create({
   dropdown: {
     position: 'absolute',
     top: 60,
-    right: 20,
-    left: 20,
+    right: 40,
+    left: 10,
     maxHeight: 200,
     backgroundColor: 'white',
     borderRadius: 5,
     borderWidth: 1,
     borderColor: 'lightgray',
     zIndex: 1,
+    marginTop: 38,
   },
   dropdownItem: {
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: 'lightgray',
+    
   },
   dropdownItemText: {
     color: 'black',

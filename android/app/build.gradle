@@ -79,8 +79,8 @@ android {
         applicationId "com.mfws_react"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1"
+        versionCode 8
+        versionName "8"
     }
     signingConfigs {
         debug {

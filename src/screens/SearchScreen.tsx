@@ -42,7 +42,7 @@ const SearchScreen = () => {
       <body style="margin: 0;">
         <div id="map" style="height: 100%;"></div>
         <script>
-          var map = L.map('map').setView([19.0760, 72.8777], 11);
+          var map = L.map('map').setView([19.0760, 72.8777], 10);
           L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
             maxZoom: 18,
           }).addTo(map);
@@ -68,9 +68,7 @@ const SearchScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.waterLevelText}>
-        Waterlevel Monitoring Sensors are under installation. {"\n"}Dummy data is being displayed.
-      </Text>
+            <Text style={styles.headerText}>LIVE water-level values</Text>
       <WebView
         style={styles.map}
         originWhitelist={['*']}
@@ -129,6 +127,18 @@ const SearchScreen = () => {
           )}
         </View>
       </Modal> */}
+      <Image
+        source={require('../assets/mf.png')} // Replace with your image path
+        style={{
+          position: 'absolute',
+          bottom: 90, 
+          left: 10,// Adjust as needed
+          alignSelf: 'center',
+          opacity: 0.7, // Adjust opacity as needed
+          height: 50, // Adjust height as needed
+          width: 80, // Adjust width as needed
+        }}
+      />
     </View>
   );
 };
@@ -139,6 +149,14 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  headerText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    color: 'black',
   },
   modalContainer: {
     flex: 1,
@@ -176,8 +194,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 10,
-    backgroundColor: 'tomato',
-    color: 'white',
+    backgroundColor: 'white',
+    color: 'black',
     textAlign: 'center',
     zIndex: 1,
   },

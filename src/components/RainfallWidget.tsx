@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { BarChart } from 'react-native-chart-kit';
+import { LineChart, BarChart,StackedBarChart } from 'react-native-chart-kit';
 import { fetchStationData } from '../utils/widgetAPI';
 import plac from '../assets/loc.png';
 
@@ -31,49 +31,75 @@ export default function RainfallWidget({ selectedOption }) {
     return <Text>Loading...</Text>;
   }
 
-  const { station, hrly_data, daily_data, seasonal_data } = stationData;
+  const { station, hrly_data, mobile_daily_data, seasonal_data } = stationData;
+
+  // Adding a dummy y value of 200 at the end of hrly_data
+  const hrlyDataWithDummy = [...hrly_data, { hour: '.', total_rainfall: 30 }];
 
   const formattedHrlyData = {
-    labels: hrly_data.map((item, index) => index % 2 === 0 ? item.hour : ''), // Display labels every second hour
+    labels: hrlyDataWithDummy.map((item, index) => index % 2 === 0 ? item.hour : ''), // Display labels every second hour
     datasets: [
       {
-        data: hrly_data.map(item => item.total_rainfall),
-        colors: hrly_data.map((value, index) =>
-          index < 6 ? () => 'rgba(211,211,211,1)' : () => 'rgb(0,255,255)'
+        data: hrlyDataWithDummy.map(item => item.total_rainfall),
+        colors: hrlyDataWithDummy.map((value, index) =>
+          index < 6 ? () => 'rgba(211,211,211,1)' : () => index === hrlyDataWithDummy.length - 1 ? 'black' : 'rgb(0,255,255)'
         ),
       },
     ],
   };
 
+  const seasonal_dataseasonalDataWithDummy = [...seasonal_data, { date: 'Dummy', observed: 250, predicted: 0 }];
   const formattedSeasonalData = {
-    labels: seasonal_data.flatMap(item => [new Date(item.date).toLocaleDateString('en-US',{day: '2-digit',month:'short'})]),
+    labels: seasonal_data.map(item => {
+      if (item.date === 'Dummy') {
+        return ' ';
+      } else {
+        return new Date(item.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+      }
+    }),
     datasets: [
       {
-        data: seasonal_data.reduce((acc, item) => acc.concat([item.observed, item.predicted]), []),
-        colors: seasonal_data.reduce((acc, item) => acc.concat([() => 'rgba(211,211,211,1)', () => 'rgb(0,255,255)']), []),
+        data: seasonal_data.map(item => item.observed),
+        color: () => 'rgba(211,211,211,1)', // color of the observed line
       },
-    ],
-  };
-
-  const formattedDailyData = {
-    labels: Object.keys(daily_data).map(date => new Date(date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })),
-    datasets: [
       {
-        data: Object.values(daily_data),
-        colors: Object.values(daily_data).map((value, index) =>
-          index < 3 ? () => 'rgba(211,211,211,1)' : () => getColor(value)
-        ),
-      },
-    ],
+        data: seasonal_data.map(item => item.predicted),
+        color: () => 'rgb(119,153,51)' // color of the predicted line
+      }
+    ]
   };
 
 
-const minValue = 0;
+  // Adding dummy data to mobile_mobile_daily_data
+// Convert mobile_daily_data to an array of objects
+const mobileDailyDataArray = Object.entries(mobile_daily_data).map(([date, value]) => ({ date, value }));
 
-function* yLabel() {
-  yield* [minValue, 50, 100,150,200];
-}
-const yLabelIterator = yLabel();
+// Add the 'Dummy' entry
+const dailyDataWithDummy = [...mobileDailyDataArray, { date: 'Dummy', value: 250 }];
+
+// Format the data for the chart
+const formattedDailyData = {
+  labels: dailyDataWithDummy.map(item => {
+    if (item.date === 'Dummy') {
+      return '';
+    } else {
+      return new Date(item.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+    }
+  }),
+  datasets: [
+    {
+      data: dailyDataWithDummy.map(item => item.value),
+      colors: dailyDataWithDummy.map((item, index) =>
+        index < 3 ? () => 'rgba(211,211,211,1)' : () => getColor(item.value)
+      ),
+    },
+  ],
+};
+
+
+
+
+  // console.log(formattedDailyData.barColors);
 
   return (
     <ScrollView style={styles.container}>
@@ -99,20 +125,21 @@ const yLabelIterator = yLabel();
           <BarChart
             data={formattedHrlyData}
             width={600}
-            height={300}
-            
+            height={250}
+            segments={3}
             chartConfig={{
               ...barChartConfig,
-              formatYLabel: () => yLabelIterator.next().value,
+              decimalPlaces: 0
             }}
             verticalLabelRotation={0}
             style={styles.chart}
+            showBarTops={false}
             fromZero
             withCustomBarColorFromData
             flatColor
           />
         </ScrollView>
-       
+
         <Text style={styles.chartTitle}>Daily Rainfall Forecast</Text>
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
@@ -135,52 +162,62 @@ const yLabelIterator = yLabel();
         <BarChart
           data={formattedDailyData}
           width={screenWidth}
-          height={200}
+          height={250}
           segments={5}
           bezier
           chartConfig={{
             ...dailyChartConfig,
-            
+            decimalPlaces: 0
           }}
           style={styles.chart}
+          showBarTops={false}
           fromZero
           withCustomBarColorFromData
           flatColor
         />
       </View>
-      <Text style={styles.chartTitle}>Seasonal Rainfall Forecast</Text>
-      <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColorBox, { backgroundColor: 'rgba(211,211,211,1)' }]} />
-            <Text style={styles.legendText}>Observed        </Text>
-            <View style={[styles.legendColorBox, { backgroundColor: 'rgb(0,255,255)' }]} />
-            <Text style={styles.legendText}>Past Predicted</Text>
-            <Text style={styles.legendText1}>Y-axis : Rainfall (in mm)</Text>
-          </View>
-        </View>
-        <ScrollView horizontal>
-          <BarChart
+      <Text style={styles.chartTitle1}>Past Forecasted Rainfall (1-day lead) for this season</Text>
+      <View style={styles.legendItem}>
+        <View style={[styles.legendColorBox, { backgroundColor: 'rgba(211,211,211,1)' }]} />
+        <Text style={styles.legendText}>Observed     </Text>
+        <View style={[styles.legendColorBox, { backgroundColor: 'rgb(119,153,51)' }]} />
+        <Text style={styles.legendText}>Past Predicted</Text>
+        <Text style={styles.legendText1}>Y-axis : Rainfall (in mm)</Text>
+      </View>
+      <View style={{ overflow: 'hidden', width: screenWidth }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} s >
+          <LineChart
             data={formattedSeasonalData}
-            width={screenWidth * 2.5}
-            height={300}
+            width={screenWidth * 3}
+            height={350}
             chartConfig={{
-              ...barChartConfig,
-              
+              ...pastChartConfig,
+              decimalPlaces: 0
+
             }}
-            verticalLabelRotation={0}
+            verticalLabelRotation={45}
             style={styles.chart}
+            segments={5}
+            withShadow={false} 
             fromZero
             withCustomBarColorFromData
             flatColor
           />
         </ScrollView>
+
+
+      </View>
     </ScrollView>
+    
   );
 }
 
 // Function to determine color based on rainfall value
 const getColor = (rainfall) => {
-  if (rainfall >= 205.5) {
+  if (rainfall >= 250) {
+    return "black"; // Red
+  } 
+  else if (rainfall >= 205.5 && rainfall < 250) {
     return "#FF0000"; // Red
   } else if (rainfall >= 115.6 && rainfall <= 204.4) {
     return "orange"; // Orange
@@ -206,12 +243,13 @@ const barChartConfig = {
     strokeWidth: 1,
     stroke: 'rgba(255,255,255,0.2)',
   },
+  propsForLabels: { fill: "transparent", },
 };
 
 const dailyChartConfig = {
   backgroundGradientFrom: "rgba(0,0,0,0.8)",
   backgroundGradientTo: "rgba(0,0,0,0.8)",
-   color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
   labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
   barPercentage: 0.5,
   fillShadowGradient: 'rgba(0,0,0,0.8)',
@@ -222,6 +260,24 @@ const dailyChartConfig = {
     stroke: 'rgba(255,255,255,0.2)',
   },
 };
+const pastChartConfig = {
+  backgroundGradientFrom: "rgba(0,0,0,0.7)",
+  backgroundGradientTo: "rgba(0,0,0,0.8)",
+  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+  barPercentage: 0.5,
+  fillShadowGradient: 'rgba(0,0,0,0)',
+  fillShadowGradientOpacity: 0,
+  strokeWidth: 2,
+  propsForBackgroundLines: {
+    strokeWidth: 1,
+    stroke: 'rgba(255,255,255,0.2)',
+  },
+};
+
+const getPercentageWidth = (percentage: number) => {
+  return (screenWidth * percentage) / 100;
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -229,9 +285,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     padding: 5,
   },
+  container1: {
+    padding: 0,
+    marginLeft: getPercentageWidth(10), // Set marginLeft dynamically using percentage
+  },
+  container2: {
+    padding: 0,
+    marginLeft: getPercentageWidth(0), // Set marginLeft dynamically using percentage
+  },
   timeContainer: {
     alignItems: 'center',
-    
   },
   timeText: {
     color: 'white',
@@ -242,7 +305,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     padding: 2,
     borderRadius: 10,
-    margin: 1,
   },
   header: {
     flexDirection: 'row',
@@ -264,6 +326,13 @@ const styles = StyleSheet.create({
   chartTitle: {
     color: 'white',
     fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 5,
+  },
+  chartTitle1: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 5,
@@ -302,5 +371,7 @@ const styles = StyleSheet.create({
   },
   chart: {
     marginVertical: 6,
-  },
+    marginLeft: -getPercentageWidth(0),  },
 });
+
+export { barChartConfig, dailyChartConfig, styles };
