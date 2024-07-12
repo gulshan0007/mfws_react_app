@@ -4,6 +4,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert,
 import Geolocation from '@react-native-community/geolocation';
 import { Picker } from '@react-native-picker/picker';
 import WebView from 'react-native-webview';
+import Map from './Map';
 
 const FormCrowd = () => {
   const [feet, setFeet] = useState<string | null>(null);
@@ -19,6 +20,7 @@ const FormCrowd = () => {
   const [selectedMapLocation, setSelectedMapLocation] = useState<{ lat: number; long: number } | null>(null);
   const [csPinToggle, setCsPinToggle] = useState<boolean>(false);
   const [csPinDropLocation, setCsPinDropLocation] = useState<{ lat: number; long: number } | null>(null);
+  
 
   const handleSubmit = async () => {
     if (waterlevelfactor === 0) {
@@ -162,6 +164,8 @@ const FormCrowd = () => {
     setSelectedMapLocation(null);
     setCsPinToggle(false);
     setCsPinDropLocation(null);
+    window.location.href = `./map?zoom=${gpsLocation?.lat || ''},${gpsLocation?.long || ''}`;
+    
   };
 
   const mapHtml = `
@@ -344,12 +348,29 @@ const FormCrowd = () => {
           onRequestClose={closeModal}
         >
           <View style={styles.modalContainer}>
-            <Text style={styles.modalText}>{message}</Text>
+            <Text style={styles.modalText}>Thanks for filling the form!!
+
+            </Text>
             <TouchableOpacity onPress={closeModal} style={styles.modalButton}>
               <Text style={styles.buttonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </Modal>
+
+        <Modal visible={mapModalVisible} transparent={false} animationType="slide">
+        <View style={{ flex: 1 }}>
+          <Map
+            csPinToggle={true}
+            csPinDropLocation={selectedMapLocation}
+            setCsPinDropLocation={setSelectedMapLocation}
+            gpsLocation={gpsLocation}
+            mapModalVisible={mapModalVisible}
+          />
+          <TouchableOpacity style={styles.modalButton} onPress={() => setMapModalVisible(false)}>
+            <Text style={styles.modalButtonText}>Close Map</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
         <Modal
           animationType="slide"
@@ -490,6 +511,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 20,
     textAlignVertical: 'top',
+    color: 'black',
   },
   submitButton: {
     backgroundColor: '#007bff',
@@ -513,6 +535,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#007bff',
     padding: 10,
     borderRadius: 5,
+  },
+  modalButtonText: {
+    color: '#fff',
+    textAlign: 'center',
   },
   confirmButton: {
     backgroundColor: '#007bff',

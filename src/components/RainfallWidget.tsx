@@ -12,8 +12,8 @@ export default function RainfallWidget({ selectedOption }) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const newtime = String(new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short' }) + ", " + new Date().toLocaleTimeString());
-      setTime(newtime);
+      const newTime = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + "  " + new Date().toLocaleTimeString();
+      setTime(newTime);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -36,19 +36,31 @@ export default function RainfallWidget({ selectedOption }) {
   // Adding a dummy y value of 200 at the end of hrly_data
   const hrlyDataWithDummy = [...hrly_data, { hour: '.', total_rainfall: 30 }];
 
+  // const formattedHrlyData = {
+  //   labels: hrlyDataWithDummy.map((item, index) => index % 2 === 0 ? item.hour : ''), // Display labels every second hour
+  //   datasets: [
+  //     {
+  //       data: hrlyDataWithDummy.map(item => item.total_rainfall),
+  //       colors: hrlyDataWithDummy.map((value, index) =>
+  //         index < 6 ? () => 'rgba(211,211,211,1)' : () => index === hrlyDataWithDummy.length - 1 ? 'black' : 'rgb(0,255,255)'
+  //       ),
+  //     },
+  //   ],
+  // };
   const formattedHrlyData = {
     labels: hrlyDataWithDummy.map((item, index) => index % 2 === 0 ? item.hour : ''), // Display labels every second hour
     datasets: [
       {
         data: hrlyDataWithDummy.map(item => item.total_rainfall),
         colors: hrlyDataWithDummy.map((value, index) =>
-          index < 6 ? () => 'rgba(211,211,211,1)' : () => index === hrlyDataWithDummy.length - 1 ? 'black' : 'rgb(0,255,255)'
+          index < 6 ? () => 'rgba(211,211,211,1)' : () => index === hrlyDataWithDummy.length - 1 ? 'black' : 'rgba(211,211,211,1)'
         ),
       },
     ],
   };
 
-  const seasonal_dataseasonalDataWithDummy = [...seasonal_data, { date: 'Dummy', observed: 250, predicted: 0 }];
+  const seasonalDataWithDummy = [...seasonal_data, { date: 'Dummy', observed: 250, predicted: 0 }];
+
   const formattedSeasonalData = {
     labels: seasonal_data.map(item => {
       if (item.date === 'Dummy') {
@@ -56,15 +68,16 @@ export default function RainfallWidget({ selectedOption }) {
       } else {
         return new Date(item.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
       }
-    }),
+    }).reverse(), // Reverse the array to display labels in reverse order
+  
     datasets: [
       {
-        data: seasonal_data.map(item => item.observed),
-        color: () => 'rgba(211,211,211,1)', // color of the observed line
+        data: seasonal_data.map(item => item.observed).reverse(), // Reverse the observed data array
+        color: () => 'rgba(211, 211, 211, 1)', // color of the observed line
       },
       {
-        data: seasonal_data.map(item => item.predicted),
-        color: () => 'rgb(119,153,51)' // color of the predicted line
+        data: seasonal_data.map(item => item.predicted).reverse(), // Reverse the predicted data array
+        color: () => 'rgb(119, 153, 51)' // color of the predicted line
       }
     ]
   };
@@ -111,13 +124,13 @@ const formattedDailyData = {
           <Image source={plac} style={styles.icon} />
           <Text style={styles.stationName}>{station.name}</Text>
         </View>
-        <Text style={styles.chartTitle}>Hourly Rainfall Forecast</Text>
+        <Text style={styles.chartTitle}>Observed Hourly Rainfall </Text>
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: 'rgba(211,211,211,1)' }]} />
-            <Text style={styles.legendText}>Observed     </Text>
-            <View style={[styles.legendColorBox, { backgroundColor: 'rgb(0,255,255)' }]} />
-            <Text style={styles.legendText}>Forecasted</Text>
+            <Text style={styles.legendText}>Observed data from MCGM   </Text>
+            {/* <View style={[styles.legendColorBox, { backgroundColor: 'rgb(0,255,255)' }]} />
+            <Text style={styles.legendText}>Forecasted</Text> */}
             <Text style={styles.legendText1}>Y-axis : Rainfall (in mm)</Text>
           </View>
         </View>
@@ -144,13 +157,19 @@ const formattedDailyData = {
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(205.5) }]} />
-            <Text style={styles.legendText}>Extremely Heavy Rainfall (>=204.5 mm)    </Text>
+            <Text style={styles.legendText}>Extremely Heavy Rainfall (>=204.5 mm) </Text>
+            
+          </View>
+          <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(115.6) }]} />
             <Text style={styles.legendText}>Very Heavy Rainfall (115.6-204.4 mm)</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(64.5) }]} />
-            <Text style={styles.legendText}>Heavy Rainfall (64.5-115.5 mm)                   </Text>
+            <Text style={styles.legendText}>Heavy Rainfall (64.5-115.5 mm)  </Text>
+            
+          </View>
+          <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(15.6) }]} />
             <Text style={styles.legendText}>Moderate Rainfall (15.6-64.4 mm)</Text>
           </View>
@@ -158,6 +177,7 @@ const formattedDailyData = {
             <View style={[styles.legendColorBox, { backgroundColor: getColor(0) }]} />
             <Text style={styles.legendText}>Very Light to Light Rainfall (0.1-15.6 mm)</Text>
           </View>
+          
         </View>
         <BarChart
           data={formattedDailyData}
@@ -176,7 +196,7 @@ const formattedDailyData = {
           flatColor
         />
       </View>
-      <Text style={styles.chartTitle1}>Past Forecasted Rainfall (1-day lead) for this season</Text>
+      <Text style={styles.chartTitle}>Past Forecasted Rainfall (1-day lead) for this season</Text>
       <View style={styles.legendItem}>
         <View style={[styles.legendColorBox, { backgroundColor: 'rgba(211,211,211,1)' }]} />
         <Text style={styles.legendText}>Observed     </Text>
@@ -185,7 +205,7 @@ const formattedDailyData = {
         <Text style={styles.legendText1}>Y-axis : Rainfall (in mm)</Text>
       </View>
       <View style={{ overflow: 'hidden', width: screenWidth }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} s >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}  >
           <LineChart
             data={formattedSeasonalData}
             width={screenWidth * 3}
@@ -204,7 +224,7 @@ const formattedDailyData = {
             flatColor
           />
         </ScrollView>
-
+        <Text style={styles.chartTitle1}>Scroll ---> </Text>
 
       </View>
     </ScrollView>
@@ -297,7 +317,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeText: {
-    color: 'white',
+    color: 'tomato',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -324,18 +344,19 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   chartTitle: {
-    color: 'white',
-    fontSize: 16,
+    color: 'tomato',
+    fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 5,
   },
   chartTitle1: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 5,
+    marginTop: 0,
+    marginBottom: 8,
   },
   legendContainer: {
     flexDirection: 'column',
@@ -362,7 +383,7 @@ const styles = StyleSheet.create({
   },
   legendText1: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 8,
     marginRight: 2,
     textAlign: 'right',
     position: 'absolute',

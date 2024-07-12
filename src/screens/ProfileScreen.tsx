@@ -110,8 +110,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 20,
         color: 'black',
-        // fontStyle: 'italic',
-        fontFamily: 'NunitoSans_10pt-Regular',
+        fontStyle: 'italic',
     },
     header: {
         textAlign: 'center',

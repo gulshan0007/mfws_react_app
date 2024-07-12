@@ -1,35 +1,69 @@
-import React, { useState } from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet, Dimensions, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Modal, Text, TouchableOpacity, View, StyleSheet, Image,ScrollView, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
+import axios from 'axios';
+import { LineChart } from 'react-native-chart-kit';
 
-// Dummy markers for the map
-const dummyMarkers = [
-  { position: [19.12416667, 72.84694444], name: "Andheri Subway (bandh)" },
-  { position: [19.12416867, 72.84685544], name: "Andheri Subway Pole (Alternate location)" },
-  { position: [19.03127051, 72.85837318], name: "Gandhi Market below the King Circle bridge" },
-  { position: [19.00870649, 72.84182174], name: "Hindmata (Pole 1)" },
-  { position: [19.07529221, 72.84067776], name: "Khar Subway" },
-  { position: [19.07525531, 72.84044246], name: "Khar subway (alternate location pole)" },
-  { position: [19.07351796, 72.84974291], name: "Mumbai university" },
-  { position: [18.97377629, 72.82290942], name: "Nair Hospital (Outside HDFC bank)" },
-  { position: [18.9740177, 72.82299581], name: "Nair hospital (alternate location street pole)" },
-  { position: [18.96205825, 72.81331529], name: "Nana chowk (Shri Krishna Hotel)" },
-  { position: [19.06087774, 72.89412691], name: "16th Postal colony road" },
-  { position: [19.13038919, 72.89581639], name: "BMC's 8 MLD plant behind L&T, Filterpada" }
-];
+const screenWidth = Dimensions.get('window').width;
 
 const SearchScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [selectedMarker, setSelectedMarker] = useState<any>(null);
+  const [chartData, setChartData] = useState<any>(null);
+  const [sensorList, setSensorList] = useState<any[]>([]);
 
-  const handleMarkerPress = (marker) => {
+  useEffect(() => {
+    fetchSensorListData();
+  }, []);
+
+  const fetchSensorListData = async () => {
+    const accessId = 'lX1d9akADFVLiYhB';
+    const accessKey = 'NsKeyQDu9zgbED9KINEeYhIvRzbcSr1VKtDhbTMaUQMlAtPA8sOyjDm8Q85CBH9d';
+    const url = 'https://app.aurassure.com/-/api/iot-platform/v1.1.0/clients/10684/applications/16/things/list';
+
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          'Access-Id': accessId,
+          'Access-Key': accessKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const sensorList = response.data.things.map((sensor: any) => ({
+        id: sensor.id,
+        name: sensor.name,
+        latitude: sensor.latitude,
+        longitude: sensor.longitude,
+        address: sensor.address
+      }));
+
+      setSensorList(sensorList);
+    } catch (error) {
+      console.error('Error fetching sensor list:', error);
+    }
+  };
+
+  const handleMarkerPress = async (marker: any) => {
     setSelectedMarker(marker);
     setModalVisible(true);
+    try {
+      const response = await axios.get(`https://api.mumbaiflood.in/weather/waterleveldata/${marker.id}`);
+      const data = response.data.data.map((entry: any) => ({
+        time: entry.time * 1000,
+        value: parseInt(entry.parameter_values.us_mb) > 347 ? 0 : parseInt(entry.parameter_values.us_mb)
+      }));
+      setChartData(data);
+      console.log(data);
+    } catch (error) {
+      console.error('Error fetching water level data:', error);
+    }
   };
 
   const closeModal = () => {
     setModalVisible(false);
     setSelectedMarker(null);
+    setChartData(null);
   };
 
   const mapHTML = `
@@ -47,10 +81,10 @@ const SearchScreen = () => {
             maxZoom: 18,
           }).addTo(map);
 
-          var markers = ${JSON.stringify(dummyMarkers)};
+          var markers = ${JSON.stringify(sensorList)};
 
           markers.forEach(marker => {
-            L.marker(marker.position).addTo(map)
+            L.marker([marker.latitude, marker.longitude]).addTo(map)
               .bindPopup(marker.name)
               .on('click', function() {
                 window.ReactNativeWebView.postMessage(JSON.stringify(marker));
@@ -68,7 +102,7 @@ const SearchScreen = () => {
 
   return (
     <View style={styles.container}>
-            <Text style={styles.headerText}>LIVE water-level values</Text>
+      <Text style={styles.headerText}>LIVE water-level values</Text>
       <WebView
         style={styles.map}
         originWhitelist={['*']}
@@ -79,7 +113,7 @@ const SearchScreen = () => {
         }}
       />
 
-      {/* <Modal
+      <Modal
         visible={modalVisible}
         animationType="slide"
         transparent={true}
@@ -91,53 +125,58 @@ const SearchScreen = () => {
           </TouchableOpacity>
           {selectedMarker && (
             <View style={styles.markerInfo}>
-              <Image source={require('../assets/download.png')} style={styles.markerImage} />
-              <Text>{selectedMarker.name}</Text>
-              {/* Example BarChart implementation */}
-              {/* <BarChart
-                style={styles.barChart}
-                data={{
-                  labels: ['Station 1', 'Station 2', 'Station 3', 'Station 4', 'Station 5', 'Station 6'],
-                  datasets: [{
-                    data: [20, 45, 28, 80, 99, 43],
-                  }],
-                }}
-                width={Dimensions.get('window').width - 40}
-                height={200}
-                yAxisSuffix=" m"
-                yAxisInterval={1}
-                chartConfig={{
-                  backgroundColor: '#ffffff',
-                  backgroundGradientFrom: '#ffffff',
-                  backgroundGradientTo: '#ffffff',
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  style: {
-                    borderRadius: 16,
-                  },
-                }}
-                bezier
-                style={{
-                  marginVertical: 8,
-                  borderRadius: 16,
-                }}
-              /> */}
-            {/* </View>
+              
+              <Text style={styles.chartTitle}>{selectedMarker.name}</Text>
+              <Text style={styles.chartTitle}>{selectedMarker.address}</Text>
+              {chartData && (
+                <View style={styles.chartContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}  >
+                  <LineChart
+                    data={{
+                      labels: chartData
+      .filter((_, index) => index % 10 === 0) // Filter to include every 10th label
+      .map(entry => new Date(entry.time).toLocaleTimeString()).reverse(),
+                      datasets: [
+                        {
+                          data: chartData.map(entry => entry.value).reverse(),
+                          color: () => 'rgb(0, 255, 255)',
+                          withDots: false,
+                          
+                        },
+                      ],
+                    }}
+                    width={screenWidth*15} // from react-native
+                    height={420}
+                    chartConfig={{
+                      backgroundColor: 'rgba(0,0,0,0.8)',
+                      backgroundGradientFrom: "rgba(0,0,0,0.8)",
+                      backgroundGradientTo: "rgba(0,0,0,0.8)",
+                      decimalPlaces: 2,
+                      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                      barPercentage: 0.5,
+                      strokeWidth: 2,
+                      propsForBackgroundLines: {
+                        strokeWidth: 1,
+                        stroke: 'rgba(255,255,255,0.2)',
+                      },
+                      
+                    }}
+                    verticalLabelRotation={45}
+                    style={styles.chart}
+                    withShadow={false} 
+                  />
+                  </ScrollView>
+                </View>
+              )}
+            </View>
           )}
         </View>
-      </Modal> */}
+      </Modal>
+
       <Image
-        source={require('../assets/mf.png')} // Replace with your image path
-        style={{
-          position: 'absolute',
-          bottom: 90, 
-          left: 10,// Adjust as needed
-          alignSelf: 'center',
-          opacity: 0.7, // Adjust opacity as needed
-          height: 50, // Adjust height as needed
-          width: 80, // Adjust width as needed
-        }}
+        source={require('../assets/mf.png')}
+        style={styles.logo}
       />
     </View>
   );
@@ -150,6 +189,14 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  chartTitle: {
+    color: 'tomato',
+    fontSize: 12,
+    top: 40,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 5,
+  },
   headerText: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -160,13 +207,14 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButton: {
     position: 'absolute',
-    top: 40,
+    top: 10,
     right: 20,
     zIndex: 1,
   },
@@ -175,7 +223,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   markerInfo: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
@@ -185,19 +233,21 @@ const styles = StyleSheet.create({
     height: 200,
     marginBottom: 10,
   },
-  barChart: {
-    marginTop: 10,
+  chartContainer: {
+    marginTop: 80,
+    alignItems: 'center',
   },
-  waterLevelText: {
+  chart: {
+    borderRadius: 8,
+  },
+  logo: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    padding: 10,
-    backgroundColor: 'white',
-    color: 'black',
-    textAlign: 'center',
-    zIndex: 1,
+    bottom: 90,
+    left: 10,
+    alignSelf: 'center',
+    opacity: 0.7,
+    height: 50,
+    width: 80,
   },
 });
 

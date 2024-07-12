@@ -200,7 +200,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       )}
-            <Text style={styles.heading}>Mumbai Flood Experiment</Text>
+            <Text style={styles.heading}>Experimental Rainfall Forecast</Text>
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
@@ -255,6 +255,34 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
+
+      <View style={styles.legendContainer}>
+      <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+    <View style={[styles.legendItem, { backgroundColor: 'red' }]} />
+    <Text style={styles.legendText}>Heavy Rainfall</Text>
+  </View>
+  <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+    <View style={[styles.legendItem, { backgroundColor: 'orange' }]} />
+    <Text style={styles.legendText}>Moderate to Heavy Rainfall</Text>
+  </View>
+  <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+        <View style={[styles.legendItem, { backgroundColor: 'yellow' }]} />
+        <Text style={styles.legendText}>Moderate Rainfall</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+        <View style={[styles.legendItem, { backgroundColor: 'skyblue' }]} />
+        <Text style={styles.legendText}>Light to Moderate Rainfall</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+        <View style={[styles.legendItem, { backgroundColor: 'lightgreen' }]} />
+        <Text style={styles.legendText}>Light Rainfall</Text>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'left' }}>
+        <View style={[styles.legendItem, { backgroundColor: 'grey' }]} />
+        <Text style={styles.legendText}>No Rainfall</Text>
+        </View>
+      </View>
+
       <Image
         source={require('../assets/mf.png')} // Replace with your image path
         style={{
@@ -283,9 +311,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 10,
+    padding: 5,
+    marginTop: 0,
     marginBottom: 0,
     color: 'black',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -386,5 +416,27 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 30,
     elevation: 5,
+  },
+  legendContainer: {
+    position: 'absolute',
+    bottom: 85,
+    right: 10,
+    flexDirection: 'column',
+    flexWrap: 'wrap',
+    alignItems: 'left',
+    backgroundColor: 'white',
+    padding: 5,
+    borderRadius: 5,
+    zIndex: 1,
+  },
+  legendItem: {
+    width: 10,
+    height: 10,
+    marginRight: 5,
+  },
+  legendText: {
+    fontSize: 8,
+    marginRight: 10,
+    color: 'black',
   },
 });
