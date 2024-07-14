@@ -51,7 +51,7 @@ const SearchScreen = () => {
       const response = await axios.get(`https://api.mumbaiflood.in/weather/waterleveldata/${marker.id}`);
       const data = response.data.data.map((entry: any) => ({
         time: entry.time * 1000,
-        value: parseInt(entry.parameter_values.us_mb) > 347 ? 0 : parseInt(entry.parameter_values.us_mb)
+        value: parseInt(entry.parameter_values.us_mb) > 300 ? 0 : parseInt(entry.parameter_values.us_mb)
       }));
       setChartData(data);
       console.log(data);

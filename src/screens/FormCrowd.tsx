@@ -4,8 +4,10 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert,
 import Geolocation from '@react-native-community/geolocation';
 import { Picker } from '@react-native-picker/picker';
 import WebView from 'react-native-webview';
+import { useNavigation } from '@react-navigation/native';
 
 const FormCrowd = () => {
+  const navigation = useNavigation();
   const [feet, setFeet] = useState<string | null>(null);
   const [inches, setInches] = useState<string | null>(null);
   const [waterlevelfactor, setWaterlevelfactor] = useState<number>(0);
@@ -162,6 +164,8 @@ const FormCrowd = () => {
     setSelectedMapLocation(null);
     setCsPinToggle(false);
     setCsPinDropLocation(null);
+    navigation.navigate('Reported Flood');
+    
   };
 
   const mapHtml = `
@@ -490,6 +494,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 20,
     textAlignVertical: 'top',
+    color: 'black',
   },
   submitButton: {
     backgroundColor: '#007bff',

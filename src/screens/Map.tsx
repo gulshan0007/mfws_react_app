@@ -22,8 +22,16 @@ const Map = ({ csPinToggle, csPinDropLocation, setCsPinDropLocation }) => {
       }
     };
 
+    // Fetch initial data
     fetchMapData();
+
+    // Set interval to fetch data every 1 second
+    const interval = setInterval(fetchMapData, 1000);
+
+    // Clear interval on component unmount
+    return () => clearInterval(interval);
   }, []);
+
 
   const interpolateColor = (color1, color2, factor) => {
     const result = color1.slice();
@@ -117,23 +125,34 @@ const Map = ({ csPinToggle, csPinDropLocation, setCsPinDropLocation }) => {
     return date.toLocaleTimeString('en-US', options);
 };
 
-  const generateMarkersScript = (markers) => {
-    return markers.map(marker => {
-      const iconHtml = createCustomIcon(marker.feet, marker.inch);
-      const popupHtml = `
-        <div>
-          <h4 class="text-lg font-semibold text-blue-600" style="color: blue;">Reported Water Level: ${marker.feet}' ${marker.inch}"</h4>
-          <h4 class="text-sm font-semibold text-green-600" style="color: green;">Location: ${marker.location}</h4>
-          <h4 class="text-sm font-semibold text-red-600" style="color: red;">Time: ${formatTime(marker.timestamp)}</h4>
-        </div>
-      `;
-      return `
-        L.marker([${marker.latitude}, ${marker.longitude}], { icon: L.divIcon({ html: \`${iconHtml}\`, className: "" }) })
-          .bindPopup(\`${popupHtml}\`)
-          .addTo(map);
-      `;
-    }).join('');
-  };
+
+const generateMarkersScript = (markers) => {
+  const latestMarker = markers.reduce((latest, marker) => {
+    return marker.timestamp > latest.timestamp ? marker : latest;
+  }, markers[0]);
+
+  return markers.map(marker => {
+    const iconHtml = createCustomIcon(marker.feet, marker.inch);
+    const popupHtml = `
+      <div>
+        <h4 class="text-lg font-semibold text-blue-600" style="color: blue;">Reported Water Level: ${marker.feet}' ${marker.inch}"</h4>
+        <h4 class="text-sm font-semibold text-green-600" style="color: green;">Location: ${marker.location}</h4>
+        <h4 class="text-sm font-semibold text-red-600" style="color: red;">Time: ${formatTime(marker.timestamp)}</h4>
+      </div>
+    `;
+    const markerScript = `
+      var marker = L.marker([${marker.latitude}, ${marker.longitude}], { icon: L.divIcon({ html: \`${iconHtml}\`, className: "" }) })
+        .bindPopup(\`${popupHtml}\`)
+        .addTo(map);
+    `;
+
+    if (marker === latestMarker) {
+      return `${markerScript} marker.openPopup();`;
+    }
+
+    return markerScript;
+  }).join('');
+};
   
 
   const handleMapClick = async (event) => {

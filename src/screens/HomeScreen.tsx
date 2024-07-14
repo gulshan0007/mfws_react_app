@@ -9,7 +9,8 @@ export default function HomeScreen() {
   const [stations, setStations] = useState([]);
   const [selectedStation, setSelectedStation] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [refreshCount, setRefreshCount] = useState(0); // State to trigger refresh
+  const [refreshCount, setRefreshCount] = useState(0); 
+  const [initialRefreshCount, setInitialRefreshCount] = useState(0); // State to trigger refresh
 
   const webviewRef = useRef(null);
   const [region, setRegion] = useState({
@@ -35,6 +36,18 @@ export default function HomeScreen() {
     };
 
     fetchStationsData();
+  }, []);
+
+  useEffect(() => {
+    const handle = setInterval(() => {
+      if (initialRefreshCount < 2) {
+        setRefreshCount(prevCount => prevCount + 1);
+        setInitialRefreshCount(prevCount => prevCount + 1);
+      }
+    }, 100000);
+
+    // Cleanup function
+    return () => clearInterval(handle);
   }, []);
 
   const handleMarkerPress = station => {
@@ -190,7 +203,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
 
-      {showMapAlert && ( // Show the alert if showMapAlert is true
+      {/* {showMapAlert && ( // Show the alert if showMapAlert is true
         <TouchableOpacity style={styles.alertContainer} onPress={() => setShowMapAlert(false)}>
           <Text style={styles.alertText}>
             If the station markers are not appearing on the map, tap refresh button.
@@ -199,7 +212,7 @@ export default function HomeScreen() {
             <Text style={styles.closeButtonText}>X</Text>
           </TouchableOpacity>
         </TouchableOpacity>
-      )}
+      )} */}
             <Text style={styles.heading}>Experimental Rainfall Forecast</Text>
       <View style={styles.searchContainer}>
         <TextInput
