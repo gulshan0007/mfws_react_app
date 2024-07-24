@@ -13,6 +13,7 @@ const FormCrowd = () => {
   const [waterlevelfactor, setWaterlevelfactor] = useState<number>(0);
   const [location, setLocation] = useState<string>('');
   const [feedback, setFeedback] = useState<string>('');
+  const [name, setName] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [activeOption, setActiveOption] = useState<number>(0);
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; long: number } | null>(null);
@@ -61,6 +62,7 @@ const FormCrowd = () => {
 
   const sendData = async (data: { latitude: number | null; longitude: number | null; feet: number; inches: number }) => {
     const formData = {
+      name: name,
       feet: data.feet,
       inch: data.inches,
       location: location || (selectedMapLocation ? `Latitude: ${selectedMapLocation.lat}, Longitude: ${selectedMapLocation.long}` : ''),
@@ -158,6 +160,7 @@ const FormCrowd = () => {
     setWaterlevelfactor(0);
     setLocation('');
     setFeedback('');
+    setName('');
     setMessage('');
     setActiveOption(0);
     setGpsLocation(null);
@@ -188,7 +191,7 @@ const FormCrowd = () => {
       var region = { latitude: 19.0760, longitude: 72.8777 }; // Example coordinates for Mumbai
 
       var map = L.map('map').setView([region.latitude, region.longitude], 12);
-      L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
       }).addTo(map);
 
@@ -330,11 +333,22 @@ const FormCrowd = () => {
         <Text style={styles.label}>Feedback:</Text>
         <TextInput
           placeholder="Enter your feedback (optional)"
+          placeholderTextColor="black"
           style={styles.feedbackInput}
           value={feedback}
           onChangeText={(text) => setFeedback(text)}
           multiline
-          numberOfLines={4}
+          numberOfLines={1}
+        />
+        <Text style={styles.label}>Name:</Text>
+        <TextInput
+          placeholder="Enter your Name (optional)"
+          placeholderTextColor="black"
+          style={styles.input}
+          value={name}
+          onChangeText={(text) => setName(text)}
+          multiline
+          numberOfLines={1}
         />
 
         <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
@@ -479,6 +493,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     marginBottom: 10,
     color: 'black',
+    
   },
   inputDisabled: {
     backgroundColor: '#f0f0f0',

@@ -34,7 +34,7 @@ export default function RainfallWidget({ selectedOption }) {
   const { station, hrly_data, mobile_daily_data, seasonal_data } = stationData;
 
   // Adding a dummy y value of 200 at the end of hrly_data
-  const hrlyDataWithDummy = [...hrly_data, { hour: '.', total_rainfall: 30 }];
+  const hrlyDataWithDummy = [...hrly_data, { hour: '.', total_rainfall: 60 }];
 
   // const formattedHrlyData = {
   //   labels: hrlyDataWithDummy.map((item, index) => index % 2 === 0 ? item.hour : ''), // Display labels every second hour
@@ -59,7 +59,7 @@ export default function RainfallWidget({ selectedOption }) {
     ],
   };
 
-  const seasonalDataWithDummy = [...seasonal_data, { date: 'Dummy', observed: 250, predicted: 0 }];
+  const seasonalDataWithDummy = [...seasonal_data, { date: 'Dummy', observed: 400, predicted: 0 }];
 
   const formattedSeasonalData = {
     labels: seasonal_data.map(item => {
@@ -68,15 +68,15 @@ export default function RainfallWidget({ selectedOption }) {
       } else {
         return new Date(item.date).toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
       }
-    }).reverse(), // Reverse the array to display labels in reverse order
+    }), // Reverse the array to display labels in reverse order
   
     datasets: [
       {
-        data: seasonal_data.map(item => item.observed).reverse(), // Reverse the observed data array
+        data: seasonal_data.map(item => item.observed), // Reverse the observed data array
         color: () => 'rgba(211, 211, 211, 1)', // color of the observed line
       },
       {
-        data: seasonal_data.map(item => item.predicted).reverse(), // Reverse the predicted data array
+        data: seasonal_data.map(item => item.predicted), // Reverse the predicted data array
         color: () => 'rgb(119, 153, 51)' // color of the predicted line
       }
     ]
@@ -88,7 +88,7 @@ export default function RainfallWidget({ selectedOption }) {
 const mobileDailyDataArray = Object.entries(mobile_daily_data).map(([date, value]) => ({ date, value }));
 
 // Add the 'Dummy' entry
-const dailyDataWithDummy = [...mobileDailyDataArray, { date: 'Dummy', value: 250 }];
+const dailyDataWithDummy = [...mobileDailyDataArray, { date: 'Dummy', value: 400 }];
 
 // Format the data for the chart
 const formattedDailyData = {
@@ -101,7 +101,7 @@ const formattedDailyData = {
   }),
   datasets: [
     {
-      data: dailyDataWithDummy.map(item => item.value),
+      data: dailyDataWithDummy.map(item => parseFloat(item.value.toFixed(2))),
       colors: dailyDataWithDummy.map((item, index) =>
         index < 3 ? () => 'rgba(211,211,211,1)' : () => getColor(item.value)
       ),
@@ -157,7 +157,9 @@ const formattedDailyData = {
         <View style={styles.legendContainer}>
           <View style={styles.legendItem}>
             <View style={[styles.legendColorBox, { backgroundColor: getColor(205.5) }]} />
-            <Text style={styles.legendText}>Extremely Heavy Rainfall (>=204.5 mm) </Text>
+            <Text style={styles.legendText}>Extremely Heavy Rainfall (>=204.5 mm)       </Text>
+            <View style={[styles.legendColorBox, { backgroundColor: 'rgba(211, 211, 211, 1)' }]} />
+            <Text style={styles.legendText}>Observed Data</Text>
             
           </View>
           <View style={styles.legendItem}>
@@ -191,6 +193,7 @@ const formattedDailyData = {
           }}
           style={styles.chart}
           showBarTops={false}
+          // showValuesOnTopOfBars
           fromZero
           withCustomBarColorFromData
           flatColor
@@ -215,7 +218,7 @@ const formattedDailyData = {
               decimalPlaces: 0
 
             }}
-            verticalLabelRotation={45}
+            verticalLabelRotation={90}
             style={styles.chart}
             segments={5}
             withShadow={false} 
@@ -234,10 +237,10 @@ const formattedDailyData = {
 
 // Function to determine color based on rainfall value
 const getColor = (rainfall) => {
-  if (rainfall >= 250) {
+  if (rainfall >= 400) {
     return "black"; // Red
   } 
-  else if (rainfall >= 205.5 && rainfall < 250) {
+  else if (rainfall >= 205.5 && rainfall < 400) {
     return "#FF0000"; // Red
   } else if (rainfall >= 115.6 && rainfall <= 204.4) {
     return "orange"; // Orange
@@ -264,6 +267,7 @@ const barChartConfig = {
     stroke: 'rgba(255,255,255,0.2)',
   },
   propsForLabels: { fill: "transparent", },
+  
 };
 
 const dailyChartConfig = {

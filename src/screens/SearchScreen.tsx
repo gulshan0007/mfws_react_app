@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet, Image,ScrollView, Dimensions } from 'react-native';
+import { Modal, Text, TouchableOpacity, View, StyleSheet, Image, ScrollView, Dimensions } from 'react-native';
 import { WebView } from 'react-native-webview';
 import axios from 'axios';
 import { LineChart } from 'react-native-chart-kit';
+// import * as tf from '@tensorflow/tfjs';
+// import '@tensorflow/tfjs-react-native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -11,6 +13,13 @@ const SearchScreen = () => {
   const [selectedMarker, setSelectedMarker] = useState<any>(null);
   const [chartData, setChartData] = useState<any>(null);
   const [sensorList, setSensorList] = useState<any[]>([]);
+  const [averages, setAverages] = useState<any>({
+    last5Min: 0,
+    last15Min: 0,
+    last12Hour: 0,
+    last24Hour: 0,
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchSensorListData();
@@ -47,16 +56,20 @@ const SearchScreen = () => {
   const handleMarkerPress = async (marker: any) => {
     setSelectedMarker(marker);
     setModalVisible(true);
+    setLoading(true);
     try {
       const response = await axios.get(`https://api.mumbaiflood.in/weather/waterleveldata/${marker.id}`);
-      const data = response.data.data.map((entry: any) => ({
+      const data = response.data.data.map((entry) => ({
         time: entry.time * 1000,
         value: parseInt(entry.parameter_values.us_mb) > 300 ? 0 : parseInt(entry.parameter_values.us_mb)
       }));
-      setChartData(data);
-      console.log(data);
+      const cleanedData = removeSpikes(data);
+      setChartData(cleanedData);
+      setAverages(calculateAverages(cleanedData));
+      setLoading(false); 
     } catch (error) {
       console.error('Error fetching water level data:', error);
+      setLoading(false);
     }
   };
 
@@ -64,6 +77,57 @@ const SearchScreen = () => {
     setModalVisible(false);
     setSelectedMarker(null);
     setChartData(null);
+    setAverages({});
+  };
+
+  const removeSpikes = (data) => {
+    if (data.length < 2) return data; // Not enough data points to compare
+  
+    const adjustedData = [...data];
+  
+    for (let i = 1; i < data.length; i++) {
+      const timeDiff = (data[i].time - data[i - 1].time) / (60 * 1000); // Time difference in minutes
+      const valueDiff = data[i].value - data[i - 1].value; // Water level difference
+      const slope = valueDiff / timeDiff; // Slope
+  
+      if (Math.abs(slope) > 10) { // Adjust the threshold if needed
+        adjustedData[i].value = adjustedData[i - 1].value; // Replace with the previous value
+      }
+    }
+  
+    return adjustedData;
+  };
+  
+
+  const numberFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const calculateAverages = (data) => {
+    const now = Date.now();
+    const intervals = {
+      last5Min: 5 * 60 * 1000,
+      last15Min: 15 * 60 * 1000,
+      last12Hour: 12 * 60 * 60 * 1000,
+      last24Hour: 24 * 60 * 60 * 1000,
+    };
+
+    const averages = {
+      last5Min: calculateAverage(data, now - intervals.last5Min),
+      last15Min: calculateAverage(data, now - intervals.last15Min),
+      last12Hour: calculateAverage(data, now - intervals.last12Hour),
+      last24Hour: calculateAverage(data, now - intervals.last24Hour),
+    };
+
+    return averages;
+  };
+
+  const calculateAverage = (data, startTime) => {
+    const filteredData = data.filter(entry => entry.time >= startTime);
+    if (filteredData.length === 0) return 0;
+    const sum = filteredData.reduce((total, entry) => total + entry.value, 0);
+    return sum / filteredData.length;
   };
 
   const mapHTML = `
@@ -77,7 +141,7 @@ const SearchScreen = () => {
         <div id="map" style="height: 100%;"></div>
         <script>
           var map = L.map('map').setView([19.0760, 72.8777], 10);
-          L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 18,
           }).addTo(map);
 
@@ -112,7 +176,7 @@ const SearchScreen = () => {
           handleMarkerPress(marker);
         }}
       />
-
+  
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -123,63 +187,76 @@ const SearchScreen = () => {
           <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
             <Text style={styles.closeButtonText}>X</Text>
           </TouchableOpacity>
-          {selectedMarker && (
-            <View style={styles.markerInfo}>
-              
-              <Text style={styles.chartTitle}>{selectedMarker.name}</Text>
-              <Text style={styles.chartTitle}>{selectedMarker.address}</Text>
-              {chartData && (
-                <View style={styles.chartContainer}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}  >
-                  <LineChart
-                    data={{
-                      labels: chartData
-      .filter((_, index) => index % 10 === 0) // Filter to include every 10th label
-      .map(entry => new Date(entry.time).toLocaleTimeString()).reverse(),
-                      datasets: [
-                        {
-                          data: chartData.map(entry => entry.value).reverse(),
-                          color: () => 'rgb(0, 255, 255)',
-                          withDots: false,
-                          
-                        },
-                      ],
-                    }}
-                    width={screenWidth*15} // from react-native
-                    height={420}
-                    chartConfig={{
-                      backgroundColor: 'rgba(0,0,0,0.8)',
-                      backgroundGradientFrom: "rgba(0,0,0,0.8)",
-                      backgroundGradientTo: "rgba(0,0,0,0.8)",
-                      decimalPlaces: 2,
-                      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                      barPercentage: 0.5,
-                      strokeWidth: 2,
-                      propsForBackgroundLines: {
-                        strokeWidth: 1,
-                        stroke: 'rgba(255,255,255,0.2)',
-                      },
-                      
-                    }}
-                    verticalLabelRotation={45}
-                    style={styles.chart}
-                    withShadow={false} 
-                  />
-                  </ScrollView>
+  
+          {loading ? (
+            <Text style={styles.loadingText}>Loading...</Text>
+          ) : (
+            selectedMarker && (
+              <View style={styles.markerInfo}>
+                <Text style={styles.chartTitle}>{selectedMarker.name}</Text>
+                <Text style={styles.chartTitle}>{selectedMarker.address}</Text>
+  
+                <View style={styles.averageTitle}>
+                  <Text style={styles.averageText}>Average Last 5 Minutes: {numberFormatter.format(averages.last5Min)} cm</Text>
+                  <Text style={styles.averageText}>Average Last 15 Minutes: {numberFormatter.format(averages.last15Min)} cm</Text>
+                  <Text style={styles.averageText}>Average Last 12 Hours: {numberFormatter.format(averages.last12Hour)} cm</Text>
+                  <Text style={styles.averageText}>Average Last 24 Hours: {numberFormatter.format(averages.last24Hour)} cm</Text>
                 </View>
-              )}
-            </View>
+  
+                {chartData && (
+                  <ScrollView horizontal>
+                    <LineChart
+                      data={{
+                        labels: chartData.map((entry, index) => index % 80 === 0 ? new Date(entry.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''),
+
+                        datasets: [
+                          {
+                            data: chartData.map(entry => entry.value),
+                            color: () => 'rgb(0, 255, 255)',
+                            withDots: false,
+                          },
+                        ],
+                      }}
+                      width={screenWidth}
+                      height={380}
+                      chartConfig={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        backgroundGradientFrom: 'rgba(0,0,0,0.8)',
+                        backgroundGradientTo: 'rgba(0,0,0,0.8)',
+                        decimalPlaces: 0,
+                        color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                        labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                        barPercentage: 0.5,
+                        strokeWidth: 1,
+                        propsForBackgroundLines: {
+                          strokeWidth: 0,  // Set strokeWidth to 0 to remove background lines
+                        },
+                        yAxisLabel: {
+                          fontSize: 12,  // Adjust the font size for y-axis labels
+                        },
+                        xAxisLabel: {
+                          fontSize: 12,  // Adjust the font size for x-axis labels
+                        },
+                      }}
+                      verticalLabelRotation={90}
+                      style={styles.chart}
+                      withShadow={false}
+                    />
+                  </ScrollView>
+                )}
+              </View>
+            )
           )}
         </View>
       </Modal>
-
+  
       <Image
         source={require('../assets/mf.png')}
         style={styles.logo}
       />
     </View>
   );
+  
 };
 
 const styles = StyleSheet.create({
@@ -192,7 +269,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     color: 'tomato',
     fontSize: 12,
-    top: 40,
+    top: 0,
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 5,
@@ -207,7 +284,6 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -233,8 +309,22 @@ const styles = StyleSheet.create({
     height: 200,
     marginBottom: 10,
   },
+  averageText: {
+    color: 'white',
+    fontSize: 12,
+    marginTop: 5,
+  },
+  averageTitle: {
+    marginTop: 10,
+    marginBottom: 10,
+
+  },
+  averageTitle1: {
+    marginTop: 160,
+
+  },
   chartContainer: {
-    marginTop: 80,
+    marginTop: 60,
     alignItems: 'center',
   },
   chart: {

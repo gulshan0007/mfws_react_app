@@ -19,16 +19,33 @@ const ProfileScreen: React.FC = () => {
         <ScrollView style={styles.container}>
             <Text style={styles.header}>WHO WE ARE</Text>
             <Text style={styles.paragraph}>
-            We are a team of students, faculty, and staff from the Interdisciplinary Programme in Climate Studies (IDPCS) at IIT Bombay, developing an experimental rainfall forecasting and flood monitoring system to help Mumbai adapt to its persistent monsoon flooding. By disseminating near-real-time waterlogging information through a dedicated website portal and the Mumbai Flood App, we aim to provide Mumbaikars with timely and accurate updates. This initiative is part of the HDFC-ERGO IIT Bombay (HE-IITB) Innovation Lab, funded by HDFC ERGO and in collaboration with the MCGM Centre for Municipal Capacity Building and Research (MCMCR).
-                {'\n\n'}
-                Our hyperlocal rainfall forecasts are derived from global forecasting systems (GFS) and enhanced through AI/ML modeling. The Rainfall tab on the Home page of the web portal and app displays hourly forecasts for the next 24 hours and daily forecasts for the following three days at MCGM automatic weather stations (AWS). For more details on the rainfall forecast, visit the Rainfall tab.
-                {'\n\n'}
-                Additionally, we are installing nine water-level monitoring stations at various flood-prone hotspots across Mumbai. These stations will provide near-real-time waterlogging updates during the monsoon. For comprehensive information, visit the Water Level tab on the Home Page.
+            We are a team of students, faculty, and staff from the Interdisciplinary Programme in Climate Studies (IDPCS) at IIT Bombay, developing an experimental rainfall forecasting and flood monitoring system to help Mumbai adapt to its persistent monsoon flooding. 
 
                 {'\n\n'}
-            We are also in the process of installing nine water-level monitoring stations at different flood-prone hotspots across Mumbai. These stations will display near-real-time waterlogging scenarios during monsoon. For complete details, visit the Water level tab on the Home Page.
+                By disseminating near-real-time rainfall and  waterlogging information through a dedicated website portal <Text style={[styles.paragraph, styles.link]} onPress={() => Linking.openURL('https://www.mumbaiflood.in/')}>
+      {' https://www.mumbaiflood.in/ '}
+    </Text> and the MUMBAI FLOOD APP, we aim to provide Mumbaikars with timely and accurate rainfall forecast and flood updates to help them plan their rain days ahead. 
                 {'\n\n'}
-                Join us in this initiative to help Mumbai manage its day-to-day life during monsoon. Report flood in your area using THE form. Help us help you.
+                This is an initiative by HDFC-ERGO IIT Bombay (HE-IITB) Innovation Lab, with funded from HDFC ERGO, in collaboration with the MCGM Centre for Municipal Capacity Building and Research (MCMCR). 
+
+
+                {'\n\n'}
+                Experimental Rainfall Forecasts: The hyperlocal rainfall forecasts have been derived from global forecasting systems (GFS) and enhanced through AI/ML modeling. The Rainfall tab on the Home page of the web portal and App displays hourly observed values (from MCGM) for the next 24 hours and daily forecasts for the following three days at MCGM automatic weather stations (AWS). For more details on the rainfall forecast, visit the Rainfall tab.
+
+                {'\n\n'}
+                
+LIVE Water-level monitoring: Additionally, we have installed nine water-level monitoring stations at various flood-prone hotspots across Mumbai. These stations will provide near-real-time waterlogging updates during the monsoon. For more information, visit the Water Level tab on the Home Page.
+
+{'\n\n'}
+Reported Flood: Report flood in your area by filling the water level form in the Reported Flood tab on the Home Page. 
+{'\n\n'}
+Rail: This page showcases near-real time flooding information for various local rail stations in Mumbai.
+{'\n\n'}
+Tweet: This page presents flood related tweets using hashtags like #MumbaiRains. Tweets relevant to Mumbai flooding are assessed using Machine Learning based sentiment analysis to gauge public monsoon sentiment— “positive” or “negative” and are approximately geolocated using natural language processing (NLP) based algorithms.
+{'\n\n'}
+Join us in this initiative to help Mumbai manage its day-to-day life during monsoon. Report flood in your area using THE form. We are counting on you. Help us help you.
+
+
             </Text>
 
             <Text style={styles.header}>Acknowledgements</Text>
@@ -38,11 +55,14 @@ const ProfileScreen: React.FC = () => {
                 1. Ward officers, Executive Engineers, Assistant Engineers, and Junior Engineers of the H West, F South, F North, E and L Wards for granting permissions and helping in identifying flooding hotspots;
 
                 {'\n\n'}
-                2. Faculty at the Department of Geography, University of Mumbai for their collaborative efforts in the flood monitoring experiment. We thank the VC, Registrar and the Campus Development Unit of the University of Mumbai for granting space and electricity for installing the canal sensor on MU campus;
+                2. Faculty, Department of Geography, University of Mumbai (MU) for their collaborative efforts in the flood monitoring experiment. We thank the MU Vice-Chairman, Registrar, and the Campus Development Unit for granting space and electricity for installing the canal sensor on MU campus;
+
                 {'\n\n'}
-                3. EE and AE Water Works, MCGM staff at Water Works Department, Powai for allowing to use their premises for installing canal sensor on Mithi River; 
+                3. Executive Engineer, Assistant Engineer, and other staff at the Water Works Department, Municipal Corporation of Greater Mumbai (MCGM), Powai for allowing us to use their premises for installing canal sensor on Mithi River;
+
                 {'\n\n'}
-                4. DESLM, BEST for allowing installation of road sensors on BEST poles;
+                4. Divisional Engineer Street Lights Maintenance (DESLM), Brihanmumbai Electricity Supply and Transport Undertaking (BEST) for allowing installation of road sensors on BEST poles;
+
                 {'\n\n'}
                 5. Chief Engineer and Officials of Customer Care, Electric Supply, BEST for prompt response to electrical connection requests;
                 {'\n\n'}

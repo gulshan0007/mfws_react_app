@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Image } from 'react-native';
+import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput,Alert, ActivityIndicator, ScrollView, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { fetchStations } from '../utils/widgetAPI';
 import RainfallWidget from '../components/RainfallWidget';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import ToastNotification from '../components/ToastNotification';
 
 export default function HomeScreen() {
   const [stations, setStations] = useState([]);
@@ -22,6 +23,7 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showMapToast, setShowMapToast] = useState(true);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [showMapAlert, setShowMapAlert] = useState(true); // State for showing alert
 
@@ -39,15 +41,19 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    const handle = setInterval(() => {
-      if (initialRefreshCount < 2) {
-        setRefreshCount(prevCount => prevCount + 1);
-        setInitialRefreshCount(prevCount => prevCount + 1);
-      }
-    }, 100000);
+    const intervalId = setInterval(() => {
+      setRefreshCount(prevCount => prevCount + 1);
+    }, 1000);
+
+    const timeoutId = setTimeout(() => {
+      clearInterval(intervalId);
+    }, 5000);
 
     // Cleanup function
-    return () => clearInterval(handle);
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const handleMarkerPress = station => {
@@ -142,7 +148,7 @@ export default function HomeScreen() {
       <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
       <script>
         var map = L.map('map').setView([${region.latitude}, ${region.longitude}], 12);
-        L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 18,
         }).addTo(map);
         var markers = [];
@@ -202,6 +208,13 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {showMapToast && (
+        <ToastNotification
+          message="Click colored dots on the map!!"
+          onClose={() => setShowMapToast(false)}
+        />
+      )}
+      
 
       {/* {showMapAlert && ( // Show the alert if showMapAlert is true
         <TouchableOpacity style={styles.alertContainer} onPress={() => setShowMapAlert(false)}>

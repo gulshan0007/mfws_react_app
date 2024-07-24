@@ -135,8 +135,10 @@ const generateMarkersScript = (markers) => {
     const iconHtml = createCustomIcon(marker.feet, marker.inch);
     const popupHtml = `
       <div>
+      <h4 class="text-sm font-semibold text-white" style="color: black;">Name: ${marker.name}</h4>
         <h4 class="text-lg font-semibold text-blue-600" style="color: blue;">Reported Water Level: ${marker.feet}' ${marker.inch}"</h4>
         <h4 class="text-sm font-semibold text-green-600" style="color: green;">Location: ${marker.location}</h4>
+        
         <h4 class="text-sm font-semibold text-red-600" style="color: red;">Time: ${formatTime(marker.timestamp)}</h4>
       </div>
     `;
@@ -182,7 +184,7 @@ const generateMarkersScript = (markers) => {
           document.addEventListener("DOMContentLoaded", function() {
             var map = L.map('map').setView([19.0760, 72.8777], 10);
 
-            L.tileLayer('https://tiles.stadiamaps.com/tiles/stamen_terrain/{z}/{x}/{y}{r}.png?api_key=d42390ee-716f-47d9-b8e5-2b8b44c5d63f', {
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
               maxZoom: 18,
             }).addTo(map);
 
