@@ -61,7 +61,7 @@ const SearchScreen = () => {
       const response = await axios.get(`https://api.mumbaiflood.in/weather/waterleveldata/${marker.id}`);
       const data = response.data.data.map((entry) => ({
         time: entry.time * 1000,
-        value: parseInt(entry.parameter_values.us_mb) > 300 ? 0 : parseInt(entry.parameter_values.us_mb)
+        value: parseInt(entry.parameter_values.us_mb) > 100 ? 0 : parseInt(entry.parameter_values.us_mb)
       }));
       const cleanedData = removeSpikes(data);
       setChartData(cleanedData);
@@ -90,7 +90,7 @@ const SearchScreen = () => {
       const valueDiff = data[i].value - data[i - 1].value; // Water level difference
       const slope = valueDiff / timeDiff; // Slope
   
-      if (Math.abs(slope) > 10) { // Adjust the threshold if needed
+      if (Math.abs(slope) > 25) { // Adjust the threshold if needed
         adjustedData[i].value = adjustedData[i - 1].value; // Replace with the previous value
       }
     }

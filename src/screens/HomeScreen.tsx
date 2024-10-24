@@ -123,6 +123,14 @@ export default function HomeScreen() {
     </ScrollView>
   );
 
+  const getTomorrowDate = () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: 'long', day: 'numeric' };
+    return new Intl.DateTimeFormat('en-IN', options).format(tomorrow);
+  };
+
   const leafletHTML = `
     <!DOCTYPE html>
     <html>
@@ -283,21 +291,22 @@ export default function HomeScreen() {
 
 
       <View style={styles.legendContainer}>
+      <Text style={styles.dateText}>Rainfall Forecast ({getTomorrowDate()})</Text>
       <View style={{ flexDirection: 'row', alignItems: 'left' }}>
     <View style={[styles.legendItem, { backgroundColor: 'red' }]} />
-    <Text style={styles.legendText}>Heavy Rainfall</Text>
+    <Text style={styles.legendText}>Extremely Heavy Rainfall</Text>
   </View>
   <View style={{ flexDirection: 'row', alignItems: 'left' }}>
     <View style={[styles.legendItem, { backgroundColor: 'orange' }]} />
-    <Text style={styles.legendText}>Moderate to Heavy Rainfall</Text>
+    <Text style={styles.legendText}>Very Heavy Rainfall</Text>
   </View>
   <View style={{ flexDirection: 'row', alignItems: 'left' }}>
         <View style={[styles.legendItem, { backgroundColor: 'yellow' }]} />
-        <Text style={styles.legendText}>Moderate Rainfall</Text>
+        <Text style={styles.legendText}>Heavy Rainfall</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'left' }}>
         <View style={[styles.legendItem, { backgroundColor: 'skyblue' }]} />
-        <Text style={styles.legendText}>Light to Moderate Rainfall</Text>
+        <Text style={styles.legendText}>Moderate Rainfall</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'left' }}>
         <View style={[styles.legendItem, { backgroundColor: 'lightgreen' }]} />
@@ -411,6 +420,12 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 1,
     
+  },
+  dateText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    marginBottom: 1,
+    color: 'black',
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
